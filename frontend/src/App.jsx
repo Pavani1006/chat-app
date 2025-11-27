@@ -12,8 +12,9 @@ function App() {
   const { loggedUser, login } = authStore();
 
   return (
-    <div className="min-h-screen bg-gray-800 text-white">
-      <Navbar />
+    <div className="flex flex-col h-screen bg-gray-800 text-white">
+     <div className="flex-none"> <Navbar /></div>
+     <div className="flex-1 overflow-y-hidden">
       <Routes>
         <Route
           path="/"
@@ -32,6 +33,7 @@ function App() {
           element={loggedUser ? <ProfilePage /> : <Navigate to="/login" />}
         />
       </Routes>
+      </div>
       <Toaster
   toastOptions={{
     duration: 1100, // toast disappears in 1.5 sec

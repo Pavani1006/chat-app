@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/* hide scrollbars everywhere that uses `scrollbar-hide` */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE / Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+/* Must be in the global CSS file, typically index.css */
+html,
+body,
+#root {
+  /* Ensure the foundational elements take up exactly 100% of available space */
+  height: 100%; 
+  
+  /* Crucially, remove default padding and margins */
+  margin: 0;
+  padding: 0;
+  
+  /* Ensure no content outside our app container causes scrollbars */
+  overflow: hidden; 
+}

@@ -23,9 +23,7 @@ const Messages = () => {
   }, [listenForNewMessage, stopListeningForMessages]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   if (!selectedUser) {
@@ -45,10 +43,11 @@ const Messages = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 rounded-md">
+<div className="p-4 space-y-4 rounded-md ">
+
+
       {messages.map((message) =>
         message.senderId === loggedUser._id ? (
-          // SENT BY ME → RIGHT
           <div className="flex items-end gap-3 justify-end" key={message._id}>
             <div className="bg-blue-500 text-white p-3 rounded-lg shadow-md max-w-xs lg:max-w-md">
               <p className="text-sm">{message.text}</p>
@@ -67,7 +66,6 @@ const Messages = () => {
             />
           </div>
         ) : (
-          // RECEIVED → LEFT
           <div className="flex items-start gap-3" key={message._id}>
             <img
               src={selectedUser.profilepic}

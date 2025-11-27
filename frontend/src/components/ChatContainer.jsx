@@ -1,15 +1,18 @@
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
-
+import '../index.css';
 const ChatContainer = () => {
   return (
-    <div className="flex flex-col h-full bg-base-100 shadow-lg md:w-auto">
-      <ChatHeader />
-      <div className=" flex-1 overflow-y-auto">
+    // ChatContainer.jsx
+<div className="flex flex-col h-full bg-base-100 shadow-lg w-full">
+
+  <ChatHeader />
+      
+      <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
         <Messages />
       </div>
-      <div className="flex-shrink-1 p-4 bg-base-200">
+      <div className="flex-none bg-base-200">
         <MessageInput />
       </div>
     </div>
