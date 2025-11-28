@@ -26,6 +26,23 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ⬇ Format dates for separators
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+    return date.toLocaleDateString([], {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   if (!selectedUser) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 p-2">
@@ -43,48 +60,84 @@ const Messages = () => {
   }
 
   return (
-<div className="p-4 space-y-4 rounded-md ">
+    <div className="p-4 space-y-4 overflow-y-auto">
+      {messages.map((message, index) => {
+        const showDateSeparator =
+          index === 0 ||
+          new Date(messages[index].createdAt).toDateString() !==
+            new Date(messages[index - 1].createdAt).toDateString();
 
+        return (
+          <div key={message._id}>
+            {/* 🔥 Date Separator */}
+            {showDateSeparator && (
+              <div className="text-center my-4">
+  <span className="text-gray-400 text-base font-semibold tracking-wide">
+    {formatDate(message.createdAt)}
+  </span>
+</div>
 
-      {messages.map((message) =>
-        message.senderId === loggedUser._id ? (
-          <div className="flex items-end gap-3 justify-end" key={message._id}>
-            <div className="bg-blue-500 text-white p-3 rounded-lg shadow-md max-w-xs lg:max-w-md">
-              <p className="text-sm">{message.text}</p>
-              {message.image && (
+            )}
+
+            {/* 🔷 SENDER MESSAGE (You) */}
+            {message.senderId === loggedUser._id ? (
+              <div className="flex justify-end gap-2">
+                <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow-md">
+                  {message.text && (
+                    <p className="text-sm leading-relaxed">{message.text}</p>
+                  )}
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="attachment"
+                      className="mt-2 rounded-lg max-h-52 border border-white/20"
+                    />
+                  )}
+                  <p className="text-[10px] text-right opacity-75 mt-1">
+                    {new Date(message.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
                 <img
-                  src={message.image}
-                  alt="attachment"
-                  className="mt-2 rounded-lg max-h-40"
+                  src={loggedUser.profilepic}
+                  alt="Your Avatar"
+                  className="w-9 h-9 rounded-full object-cover shadow-sm"
                 />
-              )}
-            </div>
-            <img
-              src={loggedUser.profilepic}
-              alt="Your Avatar"
-              className="w-10 h-10 rounded-full object-cover shadow-md"
-            />
-          </div>
-        ) : (
-          <div className="flex items-start gap-3" key={message._id}>
-            <img
-              src={selectedUser.profilepic}
-              alt="User Avatar"
-              className="w-10 h-10 rounded-full object-cover shadow-md"
-            />
-            <div className="bg-gray-100 p-3 rounded-lg shadow-sm max-w-xs lg:max-w-md">
-              <p className="text-sm text-gray-900">{message.text}</p>
-              {message.image && (
+              </div>
+            ) : (
+              /* 🔶 RECEIVER MESSAGE (Other User) */
+              <div className="flex gap-2">
                 <img
-                  src={message.image}
-                  alt="attachment"
-                  className="mt-2 rounded-lg max-h-40"
+                  src={selectedUser.profilepic}
+                  alt="User Avatar"
+                  className="w-9 h-9 rounded-full object-cover shadow-sm"
                 />
-              )}
-            </div>
+                <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
+                  {message.text && (
+                    <p className="text-sm leading-relaxed">{message.text}</p>
+                  )}
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="attachment"
+                      className="mt-2 rounded-lg max-h-52 border border-black/10"
+                    />
+                  )}
+                  <p className="text-[10px] text-left opacity-75 mt-1">
+                    {new Date(message.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        )
-      )}
+        );
+      })}
+
       <div ref={messagesEndRef}></div>
     </div>
   );
