@@ -21,5 +21,13 @@ body,
   padding: 0;
   
   /* Ensure no content outside our app container causes scrollbars */
-  overflow: hidden; 
+   overflow-x: hidden;   /* stop sideways scrolling */
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  scrollbar-width: none;
 }

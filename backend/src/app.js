@@ -7,7 +7,11 @@ import { app, server } from "./lib/socket.js";
 
 dotenv.config();
 
-app.use(express.json());
+// ⬇️ ADD THIS (fixes 413 Payload Too Large)
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ limit: "2mb", extended: true }));
+// ⬆️ MUST be before routes
+
 app.use(cookieParser());
 app.use(
   cors({

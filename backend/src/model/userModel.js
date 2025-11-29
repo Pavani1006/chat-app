@@ -16,10 +16,14 @@ const userSchema = mongoose.Schema(
       required: true,
       minlength: 6,
     },
-    profilepic: {
+     profilepic: {
       type: String,
       default:
-        "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y",
+        "/avatar.avif",
+    },
+    profilepicPublicId: {      // ⚠️ NEW field for Cloudinary delete
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }

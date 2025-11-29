@@ -72,11 +72,10 @@ const Messages = () => {
             {/* 🔥 Date Separator */}
             {showDateSeparator && (
               <div className="text-center my-4">
-  <span className="text-gray-400 text-base font-semibold tracking-wide">
-    {formatDate(message.createdAt)}
-  </span>
-</div>
-
+                <span className="text-gray-400 text-base font-semibold tracking-wide">
+                  {formatDate(message.createdAt)}
+                </span>
+              </div>
             )}
 
             {/* 🔷 SENDER MESSAGE (You) */}
@@ -100,8 +99,15 @@ const Messages = () => {
                     })}
                   </p>
                 </div>
+
+                {/* Avatar (Sender) */}
                 <img
-                  src={loggedUser.profilepic}
+                  src={
+                    loggedUser.profilepic &&
+                    loggedUser.profilepic.trim() !== ""
+                      ? loggedUser.profilepic
+                      : "/avatar.avif"
+                  }
                   alt="Your Avatar"
                   className="w-9 h-9 rounded-full object-cover shadow-sm"
                 />
@@ -109,11 +115,18 @@ const Messages = () => {
             ) : (
               /* 🔶 RECEIVER MESSAGE (Other User) */
               <div className="flex gap-2">
+                {/* Avatar (Receiver → same style as sender) */}
                 <img
-                  src={selectedUser.profilepic}
+                  src={
+                    selectedUser.profilepic &&
+                    selectedUser.profilepic.trim() !== ""
+                      ? selectedUser.profilepic
+                      : "/avatar.avif"
+                  }
                   alt="User Avatar"
                   className="w-9 h-9 rounded-full object-cover shadow-sm"
                 />
+
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
                   {message.text && (
                     <p className="text-sm leading-relaxed">{message.text}</p>

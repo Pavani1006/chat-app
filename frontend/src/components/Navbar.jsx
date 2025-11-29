@@ -29,10 +29,19 @@ const Navbar = () => {
             title="Profile"
           >
             <img
-              src={loggedUser.profilepic}
-              alt="Profile"
-              className="w-8 h-8 rounded-full"
-            />
+  src={
+    loggedUser.profilepic && loggedUser.profilepic !== ""
+      ? loggedUser.profilepic
+      : "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
+  }
+  onError={(e) =>
+    (e.target.src =
+      "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y")
+  }
+  alt="Profile"
+  className="w-8 h-8 rounded-full object-cover"
+/>
+
             <span className="text-xs ml-2">Profile</span>
           </Link>
           <button
