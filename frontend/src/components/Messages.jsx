@@ -9,7 +9,9 @@ const Messages = () => {
     messages,
     listenForNewMessage,
     stopListeningForMessages,
+    loadingMessages,   // ⬅ FIX: added this
   } = chatStore();
+
   const { loggedUser } = authStore();
   const messagesEndRef = useRef(null);
 
@@ -26,7 +28,6 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ⬇ Format dates for separators
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -47,6 +48,15 @@ const Messages = () => {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 p-2">
         Select a chat to start messaging.
+      </div>
+    );
+  }
+
+  // ⬅ FIX: Show loading instead of "No messages" during fetch
+  if (loadingMessages) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-400 p-2">
+        Loading messages...
       </div>
     );
   }
@@ -82,9 +92,7 @@ const Messages = () => {
             {message.senderId === loggedUser._id ? (
               <div className="flex justify-end gap-2">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow-md">
-                  {message.text && (
-                    <p className="text-sm leading-relaxed">{message.text}</p>
-                  )}
+                  {message.text && <p className="text-sm leading-relaxed">{message.text}</p>}
                   {message.image && (
                     <img
                       src={message.image}
@@ -115,7 +123,7 @@ const Messages = () => {
             ) : (
               /* 🔶 RECEIVER MESSAGE (Other User) */
               <div className="flex gap-2">
-                {/* Avatar (Receiver → same style as sender) */}
+                {/* Avatar (Receiver) */}
                 <img
                   src={
                     selectedUser.profilepic &&
@@ -128,9 +136,7 @@ const Messages = () => {
                 />
 
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
-                  {message.text && (
-                    <p className="text-sm leading-relaxed">{message.text}</p>
-                  )}
+                  {message.text && <p className="text-sm leading-relaxed">{message.text}</p>}
                   {message.image && (
                     <img
                       src={message.image}

@@ -5,8 +5,10 @@ import { authStore } from "../store/authStore";
 
 const Navbar = () => {
   const { logout, loggedUser } = authStore();
+
   return (
     <nav className="bg-gradient-to-r from-blue-950 to-purple-950 px-5 py-1 flex items-center justify-between shadow-lg lg:px-6">
+      {/* LOGO */}
       <div className="flex items-center gap-3">
         <Link
           to="/"
@@ -21,29 +23,31 @@ const Navbar = () => {
           </span>
         </Link>
       </div>
+
+      {/* RIGHT SIDE — only visible if user logged in */}
       {loggedUser && (
         <div className="flex items-center gap-8">
+          {/* PROFILE BUTTON */}
           <Link
             to="/profile"
             className="flex flex-row items-center text-white hover:text-blue-200 transition text-xl"
             title="Profile"
           >
             <img
-  src={
-    loggedUser.profilepic && loggedUser.profilepic !== ""
-      ? loggedUser.profilepic
-      : "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
-  }
-  onError={(e) =>
-    (e.target.src =
-      "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y")
-  }
-  alt="Profile"
-  className="w-8 h-8 rounded-full object-cover"
-/>
+              src={
+                loggedUser.profilepic &&
+                loggedUser.profilepic.trim() !== ""
+                  ? loggedUser.profilepic
+                  : "/avatar.avif"
+              }
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
 
             <span className="text-xs ml-2">Profile</span>
           </Link>
+
+          {/* LOGOUT BUTTON */}
           <button
             className="flex flex-row items-center text-white hover:text-red-300 transition text-xl"
             title="Logout"

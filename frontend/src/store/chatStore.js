@@ -7,12 +7,12 @@ export const chatStore = create((set, get) => ({
   users: [],
   messages: [],
   selectedUser: null,
+  loadingMessages: false, // ⬅ NEW
 
   getUsers: async () => {
     try {
       const res = await axiosInstance.get("/message/users");
       set({ users: res.data });
-      // optional: remove success toast here to avoid spam
     } catch (error) {
       toast.error("Failed to fetch users.");
     }
@@ -22,12 +22,15 @@ export const chatStore = create((set, get) => ({
     const { selectedUser } = get();
     if (!selectedUser) return;
 
+    set({ loadingMessages: true }); // ⬅ start loading
+
     try {
       const res = await axiosInstance.get(
         `/message/getmessages/${selectedUser._id}`
       );
-      set({ messages: res.data });
+      set({ messages: res.data, loadingMessages: false }); // ⬅ stop loading
     } catch (error) {
+      set({ loadingMessages: false });
       toast.error("Failed to fetch messages.");
     }
   },
@@ -42,15 +45,13 @@ export const chatStore = create((set, get) => ({
         data
       );
 
-      // sender: update own chat immediately
       set({ messages: [...messages, res.data] });
-      toast.success("Message sent successfully.");
     } catch (error) {
       toast.error("Failed to send message");
     }
   },
 
-  // when switching chat, clear previous messages so they don't mix
+  // ⬇ FIX: reset state when switching chat
   setSelectedUser: (user) => {
     set({ selectedUser: user, messages: [] });
   },
@@ -64,7 +65,6 @@ export const chatStore = create((set, get) => ({
       const loggedUser = authStore.getState().loggedUser;
       if (!selectedUser || !loggedUser) return;
 
-      // 🔥 only handle messages that belong to THIS chat
       const isForThisChat =
         (newMessage.senderId === loggedUser._id &&
           newMessage.receiverId === selectedUser._id) ||

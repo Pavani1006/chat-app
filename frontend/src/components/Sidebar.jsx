@@ -31,11 +31,17 @@ const Sidebar = () => {
           <button
             key={user._id}
             className="w-full flex items-center gap-4 p-2 my-2 rounded-xl hover:bg-primary/10 transition-colors bg-base-100 shadow-lg group"
-            onClick={() => setSelectedUser(user)}
+           onClick={() => setSelectedUser({ ...user })}
+
           >
             <div className="relative flex-shrink-0">
               <img
-                src={user.profilepic}
+                src={
+  user.profilepic && user.profilepic.trim() !== ""
+    ? user.profilepic
+    : "/avatar.avif"
+}
+
                 alt="profile"
                 className="size-12 object-cover rounded-full group-hover:border-primary/60 transition-all"
               />
