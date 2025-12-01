@@ -1,104 +1,116 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { authStore } from "../store/authStore";
+import { Link } from "react-router-dom";
 
 const SignUpPage = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const { signup } = authStore();
+  const [username, setUsername] = useState("");
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
 
-  const validateCredentials = () => {
-    if (!username.trim()) return toast.error("Full name is required");
-    if (!email.trim()) return toast.error("Email is required");
-    // if (!/^[^\s@]+@[a-zA-Z0-9-]{3,}\.[a-zA-Z]{2,}$/.test(email)) return toast.error("Invalid email format");
-    if (!password) return toast.error("Password is required");
+  const validate = () => {
+    if (!username.trim()) return toast.error("Username required");
+    if (!email.trim()) return toast.error("Email required");
+    if (!password.trim()) return toast.error("Password required");
     return true;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateCredentials()) return signup({ username, email, password });
+    if (validate()) signup({ username, email, password });
   };
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="rounded-2xl shadow-2xl p-8 w-full max-w-md bg-gradient-to-r from-gray-500 to-gray-800 relative overflow-hidden">
-        <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-400 opacity-20 rounded-full z-0 animate-pulse"></div>
-        <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-purple-400 opacity-20 rounded-full z-0 animate-pulse"></div>
-        <div className="relative z-10">
-          <h2 className="text-3xl font-bold text-center text-white mb-6 drop-shadow-lg">
-            Sign Up
-          </h2>
+    <div className="min-h-screen w-full bg-[#050509] text-white flex items-center justify-center px-6">
+
+      {/* BIG COMBINED BOX */}
+      <div className="relative flex flex-col lg:flex-row w-full max-w-4xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-[0_0_35px_rgba(147,51,234,0.45)] rounded-2xl overflow-hidden">
+
+        {/* GLOWING BACKGROUND */}
+        <div className="absolute -top-28 -left-28 w-72 h-72 bg-purple-700/25 blur-3xl rounded-full"></div>
+        <div className="absolute -bottom-28 -right-28 w-72 h-72 bg-indigo-600/25 blur-3xl rounded-full"></div>
+
+        {/* LEFT IMAGE */}
+        <div className="relative hidden lg:flex items-center justify-center w-1/2 p-8">
+          <img
+            src="/public/img1.jpg"
+            alt="Signup Illustration"
+            className="rounded-2xl shadow-[0_0_25px_rgba(147,51,234,0.45)]"
+          />
+        </div>
+
+        {/* RIGHT FORM BOX */}
+        <div className="relative z-10 w-full lg:w-1/2 p-10">
+          <h2 className="text-4xl font-bold text-center mb-2">Create Account</h2>
+          <p className="text-center text-gray-300 mb-8 text-sm">
+            Join <span className="text-purple-400 font-semibold">Connectly</span> and chat instantly 🚀
+          </p>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-gray-200 mb-1" htmlFor="username">
-                Username
-              </label>
+              <label className="block mb-1 text-gray-300 text-sm">Username</label>
               <input
-                id="username"
                 type="text"
-                className="w-full px-4 py-2 border border-gray-400 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                placeholder="Enter your username"
+                placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                required
                 autoComplete="username"
+                required
+                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 outline-none transition"
               />
             </div>
+
             <div>
-              <label className="block text-gray-200 mb-1" htmlFor="email">
-                Email Address
-              </label>
+              <label className="block mb-1 text-gray-300 text-sm">Email Address</label>
               <input
-                id="email"
                 type="email"
-                className="w-full px-4 py-2 border border-gray-400 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                placeholder="Enter your email"
+                placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 autoComplete="email"
+                required
+                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 outline-none transition"
               />
             </div>
+
             <div>
-              <label className="block text-gray-200 mb-1" htmlFor="password">
-                Password
-              </label>
+              <label className="block mb-1 text-gray-300 text-sm">Password</label>
               <input
-                id="password"
                 type="password"
-                className="w-full px-4 py-2 border border-gray-400 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                placeholder="Enter your password"
+                placeholder="Create password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
                 autoComplete="new-password"
+                required
+                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 outline-none transition"
               />
             </div>
+
+            {/* SIGNUP BUTTON */}
             <button
               type="submit"
-              className="w-full py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-lg shadow-md hover:from-blue-600 hover:to-purple-600 transition transform hover:scale-105"
+              className="w-full py-2 font-semibold text-white rounded-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 shadow-[0_0_18px_rgba(168,85,247,0.6)] transition-all duration-300"
             >
               Sign Up
             </button>
           </form>
-          <div className="flex items-center my-4">
-            <div className="flex-grow h-px bg-gray-400 opacity-30"></div>
-            <span className="mx-2 text-gray-300 text-xs">or</span>
-            <div className="flex-grow h-px bg-gray-400 opacity-30"></div>
-          </div>
-          <p className="mt-6 text-center text-gray-300">
+
+          {/* SAME BOTTOM LINE AS LOGIN */}
+          <p className="mt-6 text-center text-gray-400 text-xs">
+            💬 Fast messaging · 🔐 Secure Registration · ⚡ 24/7 available
+          </p>
+
+          <p className="mt-6 text-center text-gray-300 text-sm">
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="text-blue-400 font-semibold hover:underline"
-            >
+            <Link to="/login" className="text-purple-400 hover:underline font-semibold">
               Login
-            </a>
+            </Link>
           </p>
         </div>
       </div>
     </div>
   );
 };
+
 export default SignUpPage;

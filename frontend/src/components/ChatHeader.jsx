@@ -1,5 +1,6 @@
 import { authStore } from "../store/authStore";
 import { chatStore } from "../store/chatStore";
+import { RxCross2 } from "react-icons/rx";   // ⬅ X icon
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = chatStore();
@@ -13,7 +14,7 @@ const ChatHeader = () => {
             selectedUser.profilepic &&
             selectedUser.profilepic.trim() !== ""
               ? selectedUser.profilepic
-              : "/avatar.avif"              // 🔥 fallback added
+              : "/avatar.avif"
           }
           alt="User Avatar"
           className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover"
@@ -29,11 +30,13 @@ const ChatHeader = () => {
         </div>
       </div>
 
+      {/* ❌ close chat button */}
       <button
-        className="p-2 lg:p-3 rounded-full hover:bg-base-300"
-        onClick={() => setSelectedUser(null)}   // 🔥 ensure click closes chat
+        onClick={() => setSelectedUser(null)}
+        className="p-2 lg:p-3 rounded-full hover:bg-base-300 transition"
+        title="Close chat"
       >
-        <span className="material-icons text-lg lg:text-xl">close</span>
+        <RxCross2 className="text-white text-2xl lg:text-3xl" />
       </button>
     </div>
   );
