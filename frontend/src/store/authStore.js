@@ -56,7 +56,7 @@ export const authStore = create((set, get) => ({
  logout: async () => {
   try {
     await axiosInstance.get("/auth/logout");
-    toast.success("Logout successful.");
+    toast.success("Logged out successfully.");
 
     setTimeout(() => {
       window.location.href = "/"; // 🔥 first redirect to Landing Page

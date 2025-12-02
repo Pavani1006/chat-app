@@ -8,47 +8,37 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gradient-to-r from-blue-950 to-purple-950 px-5 py-2 flex items-center justify-between shadow-lg lg:px-6">
-      
-      {/* LOGO (updated premium version) */}
-      <div className="flex items-center gap-2">
-        <Link to="/" className="flex items-center gap-2 group" title="Messages">
-          <div className="bg-[#13131a] p-2 rounded-lg shadow-[0_0_20px_rgba(147,51,234,0.45)]">
-            <FiMessageSquare className="text-2xl text-purple-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.9)] group-hover:scale-110 transition-transform duration-200" />
-          </div>
-          <span className="text-lg font-bold text-purple-400 tracking-wide drop-shadow-md hidden sm:block">
-            Connectly
-          </span>
-        </Link>
-      </div>
 
-      {/* RIGHT — only if logged in */}
+      {/* LOGO */}
+      <Link to="/" className="flex items-center gap-2" title="Home">
+        <FiMessageSquare className="text-3xl text-purple-300" />
+        <span className="text-lg font-semibold text-purple-300 hidden sm:block">Connectly</span>
+      </Link>
+
+      {/* PROFILE + LOGOUT */}
       {loggedUser && (
-        <div className="flex items-center gap-8">
-          <Link
-            to="/profile"
-            className="flex items-center text-white hover:text-blue-200 transition text-xl"
-            title="Profile"
-          >
+        <div className="flex items-center gap-4">
+
+          {/* profile pic */}
+          <Link to="/profile" title="Profile">
             <img
               src={
-                loggedUser.profilepic &&
-                loggedUser.profilepic.trim() !== ""
+                loggedUser.profilepic && loggedUser.profilepic.trim() !== ""
                   ? loggedUser.profilepic
                   : "/avatar.avif"
               }
               alt="Profile"
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-9 h-9 rounded-full object-cover cursor-pointer hover:opacity-80 transition"
             />
-            <span className="text-xs ml-2">Profile</span>
           </Link>
 
+          {/* logout icon */}
           <button
-            className="flex items-center text-white hover:text-red-300 transition text-xl"
-            title="Logout"
             onClick={logout}
+            title="Logout"
+            className="text-white text-2xl hover:text-purple-300 transition"
           >
             <FaSignOutAlt />
-            <span className="text-xs ml-2">Logout</span>
           </button>
         </div>
       )}

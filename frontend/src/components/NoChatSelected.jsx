@@ -28,10 +28,7 @@ const NoChatSelected = () => {
         Conversations start with a hello 👋
       </div>
 
-      {/* Animated bottom hint */}
-      <p className="text-gray-500 text-sm mt-6 animate-pulse">
-        Your messages await…
-      </p>
+     
     </div>
   );
 };
