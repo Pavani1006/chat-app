@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { authStore } from "../store/authStore";
+import { Link } from "react-router-dom";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [showPwd, setShowPwd] = useState(false);
   const { login } = authStore();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     login({ email, password });
   };
@@ -15,70 +17,91 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen w-full bg-[#050509] text-white flex items-center justify-center px-6">
 
-      {/* Center box */}
-      <div className="relative bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(147,51,234,0.45)] rounded-2xl p-10 w-full max-w-md">
+      <div className="relative flex flex-col lg:flex-row w-full max-w-4xl
+        bg-white/5 backdrop-blur-lg border border-white/10 
+        shadow-[0_0_35px_rgba(147,51,234,0.18)] rounded-2xl overflow-hidden">
 
-        {/* background glowing lights */}
-        <div className="absolute -top-20 -left-20 w-56 h-56 bg-purple-700/30 blur-3xl rounded-full"></div>
-        <div className="absolute -bottom-20 -right-20 w-56 h-56 bg-indigo-500/30 blur-3xl rounded-full"></div>
+        {/* corner lights */}
+        <div className="absolute -top-14 -left-14 w-40 h-40 bg-purple-700/25 blur-2xl rounded-full"></div>
+        <div className="absolute -bottom-14 -right-14 w-40 h-40 bg-indigo-600/25 blur-2xl rounded-full"></div>
 
-        {/* content */}
-        <div className="relative z-10">
+        {/* illustration */}
+        <div className="hidden lg:flex items-center justify-center w-1/2 p-8">
+          <img
+            src="/public/Login.png"
+            alt="Login Illustration"
+            className="rounded-xl shadow-[0_0_18px_rgba(147,51,234,0.35)]"
+          />
+        </div>
 
-          {/* Title + tagline */}
+        {/* form */}
+        <div className="relative w-full lg:w-1/2 p-10">
           <h2 className="text-4xl font-bold text-center mb-2">Welcome Back</h2>
           <p className="text-center text-gray-300 mb-8 text-sm">
-            Login to continue your conversations on <span className="text-purple-400">Connectly</span>
+            Login to <span className="text-purple-400 font-semibold">Connectly</span>
           </p>
 
-          {/* Login form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+
             <div>
               <label className="block text-gray-300 mb-1 text-sm">Email</label>
               <input
                 type="email"
+                placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
                 autoComplete="email"
-                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                required
+                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-gray-400 
+                text-white placeholder-gray-400 
+                focus:border-purple-400 outline-none"
               />
             </div>
 
             <div>
               <label className="block text-gray-300 mb-1 text-sm">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                autoComplete="current-password"
-                className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:ring-2 focus:ring-purple-500 outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className="w-full px-4 py-2 pr-11 rounded-lg bg-white/10 border border-gray-400 
+                  text-white placeholder-gray-400 
+                  focus:border-purple-400 outline-none"
+                />
+                <span
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-purple-300 hover:text-purple-200"
+                >
+                  {showPwd ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                </span>
+              </div>
             </div>
 
-            {/* Purple button (small but premium) */}
             <button
               type="submit"
-              className="w-full py-2 font-semibold rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-600 shadow-[0_0_18px_rgba(168,85,247,0.6)] transition-all"
+              className="w-full py-2 font-semibold text-white rounded-full 
+              bg-gradient-to-r from-purple-600 to-indigo-500
+              border border-purple-300/40 hover:border-purple-300
+              shadow-[0_0_18px_rgba(168,85,247,0.5)]
+              hover:shadow-[0_0_25px_rgba(168,85,247,0.7)] transition-all"
             >
               Login
             </button>
           </form>
 
-          {/* Features under box — NOT same as landing */}
-          <ul className="mt-6 text-gray-400 text-xs space-y-1 text-center">
-            <li>💬 Fast messaging · 🔐 Secure login · ⚡ 24/7 available</li>
-          </ul>
+          <p className="mt-6 text-center text-gray-400 text-xs">
+            💬 Fast messaging · 🔐 Secure Login · ⚡ Always available
+          </p>
 
-          {/* Signup link */}
           <p className="mt-6 text-center text-gray-300 text-sm">
             Don't have an account?{" "}
-            <a href="/signup" className="text-purple-400 hover:underline font-semibold">
+            <Link to="/signup" className="text-purple-400 hover:underline font-semibold">
               Sign up
-            </a>
+            </Link>
           </p>
         </div>
       </div>

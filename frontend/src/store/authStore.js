@@ -53,21 +53,21 @@ export const authStore = create((set, get) => ({
 },
 
 
-  logout: async () => {
+ logout: async () => {
   try {
     await axiosInstance.get("/auth/logout");
-
     toast.success("Logout successful.");
 
-    // Delay redirect
     setTimeout(() => {
+      window.location.href = "/"; // 🔥 first redirect to Landing Page
       get().disconnectSocket();
-      set({ loggedUser: null });
-    }, 1000); // 2-second delay
+      set({ loggedUser: null });  // ⚠️ after redirect (so Protected Route won't push to /login)
+    }, 1000);
 
   } catch (error) {
     toast.error("Logout failed. Please try again.");
   }
+
     
   },
 

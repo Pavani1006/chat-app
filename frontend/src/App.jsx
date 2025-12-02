@@ -29,7 +29,7 @@ function App() {
           {/* Home only when logged in */}
           <Route
             path="/home"
-            element={loggedUser ? <HomePage /> : <Navigate to="/login" />}
+            element={loggedUser ? <HomePage /> : <Navigate to="/" />}
           />
 
           {/* Auth routes */}
@@ -45,7 +45,7 @@ function App() {
           {/* Profile */}
           <Route
             path="/profile"
-            element={loggedUser ? <ProfilePage /> : <Navigate to="/login" />}
+            element={loggedUser ? <ProfilePage /> : <Navigate to="/" />}
           />
         </Routes>
       </div>

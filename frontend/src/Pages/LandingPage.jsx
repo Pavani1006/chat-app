@@ -65,7 +65,9 @@ const LandingPage = () => {
         </div>
 
         {/* FEATURES */}
-        <section className="relative z-10 mt-24 max-w-5xl w-full">
+       {/* FEATURES - align with Get Started */}
+<section className="relative z-10 mt-12 max-w-6xl w-full px-2 sm:px-0 lg:pl-1">
+
           <h2 className="text-xl md:text-2xl font-semibold mb-7 text-center lg:text-left">
             What makes Connectly special?
           </h2>
