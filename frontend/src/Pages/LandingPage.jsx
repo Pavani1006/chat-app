@@ -5,8 +5,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen w-full bg-[#050509] text-white flex flex-col">
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 lg:px-20 py-12 relative overflow-hidden">
-        
+      <main className="flex-1 flex flex-col items-center justify-center px-6 md:px-12 lg:px-20 pt-4 pb-12 relative overflow-hidden">
+ 
         {/* soft background lights */}
         <div className="absolute w-[500px] h-[500px] bg-purple-700 opacity-20 blur-[220px] rounded-full -top-56 -left-36 pointer-events-none" />
         <div className="absolute w-[420px] h-[420px] bg-blue-600 opacity-20 blur-[220px] rounded-full bottom-0 right-0 pointer-events-none" />
@@ -15,30 +15,27 @@ const LandingPage = () => {
           
           {/* LEFT CONTENT */}
           <section>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-              Stay connected with{" "}
-              <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-md">
-                Connectly
-              </span>
-            </h1>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
+  Talk your way — with{" "}
+  <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent font-extrabold drop-shadow-[0_0_20px_rgba(129,140,248,0.5)]">
+    Connectly
+  </span>
+</h1>
+
 
             <p className="mt-5 text-gray-300 text-base md:text-lg max-w-xl leading-relaxed">
-              A modern chat platform designed to make conversations effortless —
-              fast, secure, and built for the people who matter the most.
+              Every friendship has a soundtrack — Connectly keeps the rhythm going
+              with smooth, private, real-time conversations.
             </p>
 
             {/* CTA buttons */}
             <div className="mt-9 flex flex-wrap items-center gap-4">
-
-              {/* ⭐ Better looking Get Started button ONLY change */}
               <Link
-  to="/login"
-  className="px-8 py-3 text-base font-semibold rounded-full border border-purple-500 text-purple-300 hover:bg-purple-600/20 hover:border-purple-400 hover:text-white shadow-[0_0_10px_rgba(168,85,247,0.4)] hover:shadow-[0_0_16px_rgba(168,85,247,0.7)] transition-all duration-300"
->
-  Get Started
-</Link>
-
-
+                to="/login"
+                className="px-8 py-3 text-base font-semibold rounded-full border border-purple-500 text-purple-300 hover:bg-purple-600/20 hover:border-purple-400 hover:text-white shadow-[0_0_10px_rgba(168,85,247,0.4)] hover:shadow-[0_0_16px_rgba(168,85,247,0.7)] transition-all duration-300"
+              >
+                Get Started
+              </Link>
 
               <Link
                 to="/signup"
@@ -65,9 +62,7 @@ const LandingPage = () => {
         </div>
 
         {/* FEATURES */}
-       {/* FEATURES - align with Get Started */}
-<section className="relative z-10 mt-12 max-w-6xl w-full px-2 sm:px-0 lg:pl-1">
-
+        <section className="relative z-10 mt-8 max-w-6xl w-full px-2 sm:px-0 lg:pl-1">
           <h2 className="text-xl md:text-2xl font-semibold mb-7 text-center lg:text-left">
             What makes Connectly special?
           </h2>

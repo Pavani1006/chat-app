@@ -7,8 +7,9 @@ export const chatStore = create((set, get) => ({
   users: [],
   messages: [],
   selectedUser: null,
-  loadingMessages: false, // ⬅ NEW
+  loadingMessages: false,
 
+  // 📌 Load users for sidebar (each user now has unreadCount from backend)
   getUsers: async () => {
     try {
       const res = await axiosInstance.get("/message/users");
@@ -18,23 +19,25 @@ export const chatStore = create((set, get) => ({
     }
   },
 
+  // 📌 Load messages between loggedUser and selectedUser
   getMessages: async () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
 
-    set({ loadingMessages: true }); // ⬅ start loading
+    set({ loadingMessages: true });
 
     try {
       const res = await axiosInstance.get(
         `/message/getmessages/${selectedUser._id}`
       );
-      set({ messages: res.data, loadingMessages: false }); // ⬅ stop loading
+      set({ messages: res.data, loadingMessages: false });
     } catch (error) {
       set({ loadingMessages: false });
       toast.error("Failed to fetch messages.");
     }
   },
 
+  // 📌 Send a message
   sendMessage: async (data) => {
     const { selectedUser, messages } = get();
     if (!selectedUser) return;
@@ -51,35 +54,70 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // ⬇ FIX: reset state when switching chat
+  // 📌 When clicking a user → open chat & reset unreadCount to 0
   setSelectedUser: (user) => {
-    set({ selectedUser: user, messages: [] });
+    if (!user) return set({ selectedUser: null, messages: [] });
+
+    set((state) => ({
+      selectedUser: user,
+      messages: [],
+      users: state.users.map((u) =>
+        u._id === user._id ? { ...u, unreadCount: 0 } : u
+      ),
+    }));
+
+    // 🔥 Call backend to mark seen
+    axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
+    const socket = authStore.getState().socket;
+    socket?.emit("markSeen", {
+      userId: authStore.getState().loggedUser._id,
+      chatUserId: user._id,
+    });
   },
 
+  // 📌 Listen for new real-time messages
   listenForNewMessage: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
 
     socket.on("newMessage", (newMessage) => {
-      const { selectedUser, messages } = get();
+      const { selectedUser, messages, users } = get();
       const loggedUser = authStore.getState().loggedUser;
-      if (!selectedUser || !loggedUser) return;
 
-      const isForThisChat =
-        (newMessage.senderId === loggedUser._id &&
-          newMessage.receiverId === selectedUser._id) ||
-        (newMessage.senderId === selectedUser._id &&
-          newMessage.receiverId === loggedUser._id);
+      if (!loggedUser) return;
 
-      if (!isForThisChat) return;
+      // If current chat is open → push message into box
+      if (selectedUser && newMessage.senderId === selectedUser._id) {
+        return set({ messages: [...messages, newMessage] });
+      }
 
-      set({ messages: [...messages, newMessage] });
+      // If chat is closed → increase unread count
+      const updatedUsers = users.map((u) =>
+        u._id === newMessage.senderId
+          ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
+          : u
+      );
+
+      set({ users: updatedUsers });
+    });
+
+    // 🔥 Real-time "Seen" socket update
+    socket.on("messagesSeen", ({ userId }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.seenBy?.includes(userId)
+            ? msg
+            : { ...msg, seenBy: [...msg.seenBy, userId] }
+        ),
+      }));
     });
   },
 
+  // 📌 Stop listeners
   stopListeningForMessages: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
     socket.off("newMessage");
+    socket.off("messagesSeen");
   },
 }));
