@@ -9,35 +9,29 @@ export const chatStore = create((set, get) => ({
   selectedUser: null,
   loadingMessages: false,
 
-  // 📌 Load users for sidebar (each user now has unreadCount from backend)
   getUsers: async () => {
     try {
       const res = await axiosInstance.get("/message/users");
       set({ users: res.data });
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch users.");
     }
   },
 
-  // 📌 Load messages between loggedUser and selectedUser
   getMessages: async () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
-
     set({ loadingMessages: true });
 
     try {
-      const res = await axiosInstance.get(
-        `/message/getmessages/${selectedUser._id}`
-      );
+      const res = await axiosInstance.get(`/message/getmessages/${selectedUser._id}`);
       set({ messages: res.data, loadingMessages: false });
-    } catch (error) {
+    } catch {
       set({ loadingMessages: false });
       toast.error("Failed to fetch messages.");
     }
   },
 
-  // 📌 Send a message
   sendMessage: async (data) => {
     const { selectedUser, messages } = get();
     if (!selectedUser) return;
@@ -47,16 +41,17 @@ export const chatStore = create((set, get) => ({
         `/message/sendmessage/${selectedUser._id}`,
         data
       );
-
       set({ messages: [...messages, res.data] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to send message");
     }
   },
 
-  // 📌 When clicking a user → open chat & reset unreadCount to 0
   setSelectedUser: (user) => {
     if (!user) return set({ selectedUser: null, messages: [] });
+
+    const loggedUser = authStore.getState().loggedUser;
+    const socket = authStore.getState().socket;
 
     set((state) => ({
       selectedUser: user,
@@ -66,16 +61,17 @@ export const chatStore = create((set, get) => ({
       ),
     }));
 
-    // 🔥 Call backend to mark seen
-    axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
-    const socket = authStore.getState().socket;
-    socket?.emit("markSeen", {
-      userId: authStore.getState().loggedUser._id,
-      chatUserId: user._id,
-    });
+    get()
+      .getMessages()
+      .then(() => {
+        axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
+        socket?.emit("markSeen", {
+          userId: loggedUser._id,
+          chatUserId: user._id,
+        });
+      });
   },
 
-  // 📌 Listen for new real-time messages
   listenForNewMessage: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
@@ -84,36 +80,50 @@ export const chatStore = create((set, get) => ({
       const { selectedUser, messages, users } = get();
       const loggedUser = authStore.getState().loggedUser;
 
-      if (!loggedUser) return;
+      const isChatOpen =
+        selectedUser &&
+        (
+          (String(newMessage.senderId) === String(selectedUser._id) &&
+            String(newMessage.receiverId) === String(loggedUser._id)) ||
+          (String(newMessage.receiverId) === String(selectedUser._id) &&
+            String(newMessage.senderId) === String(loggedUser._id))
+        );
 
-      // If current chat is open → push message into box
-      if (selectedUser && newMessage.senderId === selectedUser._id) {
-        return set({ messages: [...messages, newMessage] });
+      if (isChatOpen) {
+        newMessage.seenBy = [...(newMessage.seenBy || []), loggedUser._id];
+        set({ messages: [...messages, newMessage] });
+
+        axiosInstance.put(`/message/mark-seen/${newMessage.senderId}`).catch(() => {});
+        socket.emit("markSeen", {
+          userId: loggedUser._id,
+          chatUserId: newMessage.senderId,
+        });
+        return;
       }
 
-      // If chat is closed → increase unread count
       const updatedUsers = users.map((u) =>
         u._id === newMessage.senderId
           ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
           : u
       );
-
       set({ users: updatedUsers });
     });
 
-    // 🔥 Real-time "Seen" socket update
-    socket.on("messagesSeen", ({ userId }) => {
-      set((state) => ({
-        messages: state.messages.map((msg) =>
-          msg.seenBy?.includes(userId)
-            ? msg
-            : { ...msg, seenBy: [...msg.seenBy, userId] }
-        ),
-      }));
+    socket.on("messagesSeen", (viewerId) => {
+      const loggedUser = authStore.getState().loggedUser;
+      const { selectedUser, messages } = get();
+
+      if (selectedUser && String(selectedUser._id) === String(viewerId)) {
+        const updatedMsgs = messages.map((m) =>
+          String(m.senderId) === String(loggedUser._id)
+            ? { ...m, seenBy: [...new Set([...(m.seenBy || []), viewerId])] }
+            : m
+        );
+        set({ messages: updatedMsgs });
+      }
     });
   },
 
-  // 📌 Stop listeners
   stopListeningForMessages: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;

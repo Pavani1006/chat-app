@@ -1,3 +1,39 @@
+// import mongoose from "mongoose";
+
+// const messageSchema = new mongoose.Schema(
+//   {
+//     senderId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+//     receiverId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+
+//     text: {
+//       type: String,
+//       default: "",
+//     },
+
+//     image: {
+//       type: String,
+//       default: "",
+//     },
+
+//     // 🔥 Instagram-style message status: "delivered" → "seen"
+//     status: {
+//       type: String,
+//       enum: ["delivered", "seen"],
+//       default: "delivered",
+//     },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("Message", messageSchema);
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
@@ -12,19 +48,17 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    text: {
-      type: String,
-    },
-    image: {
-      type: String,
-    },
 
-    // 👇 NEW FIELD — required for "seen" and "unread counts"
-    seenBy: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "User",
-      default: [],
-    },
+    text: { type: String, default: "" },
+    image: { type: String, default: "" },
+
+    // ⭐ this is the only field used for Delivered / Seen
+    seenBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );
