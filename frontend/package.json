@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
     "browser-image-compression": "^2.0.2",

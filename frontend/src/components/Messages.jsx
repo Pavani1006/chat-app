@@ -73,10 +73,7 @@ const Messages = () => {
           new Date(message.createdAt).toDateString() !==
             new Date(messages[index - 1].createdAt).toDateString();
 
-        const isSender =
-          String(message.senderId) === String(loggedUser._id);
-
-        // 💙 STATUS FIX — this is the correct way
+        const isSender = String(message.senderId) === String(loggedUser._id);
         const isSeenBySelectedUser =
           isSender &&
           Array.isArray(message.seenBy) &&
@@ -95,20 +92,34 @@ const Messages = () => {
             )}
 
             {isSender ? (
+              /** ---------------- SENDER BUBBLE ---------------- */
               <div className="flex justify-end gap-2">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow-md">
-                  {message.text && (
-                    <p className="text-sm leading-relaxed">{message.text}</p>
-                  )}
 
+                  {/* IMAGE + CAPTION */}
                   {message.image && (
-                    <img
-                      src={message.image}
-                      alt="attachment"
-                      className="mt-2 rounded-lg max-h-52 border border-white/20"
-                    />
+                    <>
+                      <img
+                        src={message.image}
+                        alt="attachment"
+                        className="rounded-lg max-h-60 border border-black/10"
+                      />
+                      {message.caption && (
+                        <p className="text-sm text-gray-600 italic mt-2 break-words">
+                          {message.caption}
+                        </p>
+                      )}
+                    </>
                   )}
 
+                  {/* TEXT ONLY MESSAGE (do NOT show caption as text) */}
+                  {!message.image && message.text && (
+                    <p className="text-sm leading-relaxed break-words">
+                      {message.text}
+                    </p>
+                  )}
+
+                  {/* TIME */}
                   <p className="text-[10px] text-right opacity-75 mt-1">
                     {new Date(message.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -116,7 +127,7 @@ const Messages = () => {
                     })}
                   </p>
 
-                  {/* ⭐ FINAL WORKING SEEN / DELIVERED */}
+                  {/* STATUS */}
                   <p
                     className={`text-[11px] text-right mt-1 tracking-wide ${
                       isSeenBySelectedUser
@@ -130,8 +141,7 @@ const Messages = () => {
 
                 <img
                   src={
-                    loggedUser.profilepic &&
-                    loggedUser.profilepic.trim() !== ""
+                    loggedUser.profilepic?.trim()
                       ? loggedUser.profilepic
                       : "/avatar.avif"
                   }
@@ -140,11 +150,11 @@ const Messages = () => {
                 />
               </div>
             ) : (
+              /** ---------------- RECEIVER BUBBLE ---------------- */
               <div className="flex gap-2">
                 <img
                   src={
-                    selectedUser.profilepic &&
-                    selectedUser.profilepic.trim() !== ""
+                    selectedUser.profilepic?.trim()
                       ? selectedUser.profilepic
                       : "/avatar.avif"
                   }
@@ -153,18 +163,31 @@ const Messages = () => {
                 />
 
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
-                  {message.text && (
-                    <p className="text-sm leading-relaxed">{message.text}</p>
-                  )}
 
+                  {/* IMAGE + CAPTION */}
                   {message.image && (
-                    <img
-                      src={message.image}
-                      alt="attachment"
-                      className="mt-2 rounded-lg max-h-52 border border-black/10"
-                    />
+                    <>
+                      <img
+                        src={message.image}
+                        alt="attachment"
+                        className="rounded-lg max-h-60 border border-black/10"
+                      />
+                      {message.caption && (
+                        <p className="text-sm text-gray-600 italic mt-2 break-words">
+                          {message.caption}
+                        </p>
+                      )}
+                    </>
                   )}
 
+                  {/* TEXT ONLY */}
+                  {!message.image && message.text && (
+                    <p className="text-sm leading-relaxed break-words">
+                      {message.text}
+                    </p>
+                  )}
+
+                  {/* TIME */}
                   <p className="text-[10px] text-left opacity-75 mt-1">
                     {new Date(message.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",

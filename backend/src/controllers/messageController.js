@@ -29,7 +29,7 @@ export const contactsForSidebar = async (req, res) => {
 
     res.status(200).json(updatedUsers);
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error." });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -52,14 +52,14 @@ export const getMessages = async (req, res) => {
   }
 };
 
-// 📌 Send message
+// 📌 Send message (supports text + image + caption)
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text, image, caption } = req.body;    // 👈 caption included
     const senderId = req.user._id;
     const receiverId = req.params._id;
 
-    let imageUrl;
+    let imageUrl = "";
     if (image) {
       const uploadImage = await cloudinary.uploader.upload(image);
       imageUrl = uploadImage.secure_url;
@@ -70,13 +70,15 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
+      caption,               // 👈 stored in DB
       seenBy: [senderId],
     });
 
     await newMessage.save();
 
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) io.to(receiverSocketId).emit("newMessage", newMessage);
+    if (receiverSocketId)
+      io.to(receiverSocketId).emit("newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -84,7 +86,7 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// 📌 Mark all messages from this chat as seen
+// 📌 Mark messages as seen
 export const markMessagesSeen = async (req, res) => {
   try {
     const viewerId = req.user._id;
@@ -101,7 +103,8 @@ export const markMessagesSeen = async (req, res) => {
 
     if (result.modifiedCount > 0) {
       const senderSocketId = getReceiverSocketId(chatUserId);
-      if (senderSocketId) io.to(senderSocketId).emit("messagesSeen", viewerId);
+      if (senderSocketId)
+        io.to(senderSocketId).emit("messagesSeen", viewerId);
     }
 
     res.status(200).json({ success: true });
