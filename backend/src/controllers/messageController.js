@@ -52,17 +52,27 @@ export const getMessages = async (req, res) => {
   }
 };
 
-// 📌 Send message (supports text + image + caption)
+// 📌 Send message (supports text + image + caption + audio)
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image, caption } = req.body;    // 👈 caption included
+    const { text, image, caption, audio } = req.body;
     const senderId = req.user._id;
     const receiverId = req.params._id;
 
+    // ⭐ upload image if present
     let imageUrl = "";
     if (image) {
       const uploadImage = await cloudinary.uploader.upload(image);
       imageUrl = uploadImage.secure_url;
+    }
+
+    // 🎤 upload audio if present
+    let audioUrl = "";
+    if (audio) {
+      const uploadAudio = await cloudinary.uploader.upload(audio, {
+        resource_type: "video", // important for audio
+      });
+      audioUrl = uploadAudio.secure_url;
     }
 
     const newMessage = new Messages({
@@ -70,18 +80,21 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
-      caption,               // 👈 stored in DB
+      caption,
+      audio: audioUrl,
       seenBy: [senderId],
     });
 
     await newMessage.save();
 
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId)
+    if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
 
     res.status(201).json(newMessage);
   } catch (error) {
+    console.error("sendMessage error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -103,8 +116,9 @@ export const markMessagesSeen = async (req, res) => {
 
     if (result.modifiedCount > 0) {
       const senderSocketId = getReceiverSocketId(chatUserId);
-      if (senderSocketId)
+      if (senderSocketId) {
         io.to(senderSocketId).emit("messagesSeen", viewerId);
+      }
     }
 
     res.status(200).json({ success: true });

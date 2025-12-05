@@ -1,6 +1,6 @@
 import { chatStore } from "../store/chatStore";
 import { authStore } from "../store/authStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Messages = () => {
   const {
@@ -14,6 +14,8 @@ const Messages = () => {
 
   const { loggedUser } = authStore();
   const messagesEndRef = useRef(null);
+
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     if (selectedUser) getMessages();
@@ -66,129 +68,119 @@ const Messages = () => {
     );
 
   return (
-    <div className="p-4 space-y-4 overflow-y-auto">
+    <div className="p-4 space-y-4 overflow-y-auto relative">
+
+      {/* Full screen image preview */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <img
+            src={previewImage}
+            alt="preview"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+          />
+        </div>
+      )}
+
       {messages.map((message, index) => {
-        const showDateSeparator =
+        const showDate =
           index === 0 ||
           new Date(message.createdAt).toDateString() !==
             new Date(messages[index - 1].createdAt).toDateString();
 
         const isSender = String(message.senderId) === String(loggedUser._id);
-        const isSeenBySelectedUser =
-          isSender &&
-          Array.isArray(message.seenBy) &&
-          message.seenBy.some(
-            (id) => String(id) === String(selectedUser._id)
-          );
 
         return (
           <div key={message._id}>
-            {showDateSeparator && (
-              <div className="text-center my-4">
-                <span className="text-gray-400 text-base font-semibold tracking-wide">
-                  {formatDate(message.createdAt)}
-                </span>
-              </div>
+            {showDate && (
+              <p className="text-center text-gray-400 font-semibold">
+                {formatDate(message.createdAt)}
+              </p>
             )}
 
+            {/* Sender bubble */}
             {isSender ? (
-              /** ---------------- SENDER BUBBLE ---------------- */
               <div className="flex justify-end gap-2">
-                <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow-md">
+                <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow">
 
-                  {/* IMAGE + CAPTION */}
                   {message.image && (
-                    <>
-                      <img
-                        src={message.image}
-                        alt="attachment"
-                        className="rounded-lg max-h-60 border border-black/10"
-                      />
-                      {message.caption && (
-                        <p className="text-sm text-gray-600 italic mt-2 break-words">
-                          {message.caption}
-                        </p>
-                      )}
-                    </>
+                    <img
+                      src={message.image}
+                      className="rounded-lg max-h-60 cursor-pointer"
+                      onClick={() => setPreviewImage(message.image)}
+                    />
                   )}
 
-                  {/* TEXT ONLY MESSAGE (do NOT show caption as text) */}
-                  {!message.image && message.text && (
-                    <p className="text-sm leading-relaxed break-words">
-                      {message.text}
+                  {message.caption && (
+                    <p className="text-sm mt-2">{message.caption}</p>
+                  )}
+
+                  {message.audio && (
+                    <audio
+                      controls
+                      className="mt-3 w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
+                      src={message.audio}
+                    />
+                  )}
+
+                  {message.text && (
+                    <p className="text-sm break-words">{message.text}</p>
+                  )}
+
+                  {/* ⭐ TIMESTAMP (1st line) + STATUS (2nd line) */}
+                  <div className="mt-1 text-right">
+                    <p className="text-[10px] opacity-75">
+                      {new Date(message.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
-                  )}
 
-                  {/* TIME */}
-                  <p className="text-[10px] text-right opacity-75 mt-1">
-                    {new Date(message.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-
-                  {/* STATUS */}
-                  <p
-                    className={`text-[11px] text-right mt-1 tracking-wide ${
-                      isSeenBySelectedUser
-                        ? "text-blue-500"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {isSeenBySelectedUser ? "Seen" : "Delivered"}
-                  </p>
+                    {message.seenBy?.includes(selectedUser._id) ? (
+                      <p className="text-[11px] text-blue-500  mt-[1px]">
+                        Seen
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-gray-500  mt-[1px]">
+                        Delivered
+                      </p>
+                    )}
+                  </div>
                 </div>
-
-                <img
-                  src={
-                    loggedUser.profilepic?.trim()
-                      ? loggedUser.profilepic
-                      : "/avatar.avif"
-                  }
-                  alt="avatar"
-                  className="w-9 h-9 rounded-full object-cover shadow-sm"
-                />
               </div>
             ) : (
-              /** ---------------- RECEIVER BUBBLE ---------------- */
+              /* Receiver bubble */
               <div className="flex gap-2">
-                <img
-                  src={
-                    selectedUser.profilepic?.trim()
-                      ? selectedUser.profilepic
-                      : "/avatar.avif"
-                  }
-                  alt="avatar"
-                  className="w-9 h-9 rounded-full object-cover shadow-sm"
-                />
-
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
 
-                  {/* IMAGE + CAPTION */}
                   {message.image && (
-                    <>
-                      <img
-                        src={message.image}
-                        alt="attachment"
-                        className="rounded-lg max-h-60 border border-black/10"
-                      />
-                      {message.caption && (
-                        <p className="text-sm text-gray-600 italic mt-2 break-words">
-                          {message.caption}
-                        </p>
-                      )}
-                    </>
+                    <img
+                      src={message.image}
+                      className="rounded-lg max-h-60 cursor-pointer"
+                      onClick={() => setPreviewImage(message.image)}
+                    />
                   )}
 
-                  {/* TEXT ONLY */}
-                  {!message.image && message.text && (
-                    <p className="text-sm leading-relaxed break-words">
-                      {message.text}
-                    </p>
+                  {message.caption && (
+                    <p className="text-sm mt-2">{message.caption}</p>
                   )}
 
-                  {/* TIME */}
-                  <p className="text-[10px] text-left opacity-75 mt-1">
+                  {message.audio && (
+                    <audio
+                      controls
+                      className="mt-3 w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
+                      src={message.audio}
+                    />
+                  )}
+
+                  {message.text && (
+                    <p className="text-sm break-words">{message.text}</p>
+                  )}
+
+                  <p className="text-[10px] opacity-70 mt-1">
                     {new Date(message.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

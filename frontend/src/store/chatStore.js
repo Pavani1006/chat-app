@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { authStore } from "./authStore";
+import { v4 as uuid } from "uuid"; // ⭐ for temporary clientId
 
 export const chatStore = create((set, get) => ({
   users: [],
@@ -32,17 +33,47 @@ export const chatStore = create((set, get) => ({
     }
   },
 
+  // ⭐ INSTANT SENDING (Optimistic UI)
   sendMessage: async (data) => {
     const { selectedUser, messages } = get();
     if (!selectedUser) return;
+
+    const loggedUser = authStore.getState().loggedUser;
+    const tmpId = uuid(); // ⭐ temporary id to track pending message
+
+    // Create TEMP message
+    const tempMessage = {
+      _id: tmpId,
+      senderId: loggedUser._id,
+      receiverId: selectedUser._id,
+      text: data?.text || "",
+      image: data?.image || "",
+      caption: data?.caption || "",
+      createdAt: new Date().toISOString(),
+      seenBy: [loggedUser._id],
+      pending: true, // ⭐ mark as temporary
+    };
+
+    // ⏱ show instantly in UI
+    set({ messages: [...messages, tempMessage] });
 
     try {
       const res = await axiosInstance.post(
         `/message/sendmessage/${selectedUser._id}`,
         data
       );
-      set({ messages: [...messages, res.data] });
+
+      // 🔄 Replace temp message with actual DB message
+      set({
+        messages: get().messages.map((m) =>
+          m._id === tmpId ? res.data : m
+        ),
+      });
     } catch {
+      // ❌ sending failed → remove temporary message
+      set({
+        messages: get().messages.filter((m) => m._id !== tmpId),
+      });
       toast.error("Failed to send message");
     }
   },
@@ -72,6 +103,7 @@ export const chatStore = create((set, get) => ({
       });
   },
 
+  // ⭐ Update optimistic messages when socket gives real message
   listenForNewMessage: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
@@ -80,6 +112,23 @@ export const chatStore = create((set, get) => ({
       const { selectedUser, messages, users } = get();
       const loggedUser = authStore.getState().loggedUser;
 
+      // If this is the real version of a temporary sent message
+      const replacedPending = messages.some(
+        (m) =>
+          m.pending &&
+          m.text === newMessage.text &&
+          m.image === newMessage.image &&
+          String(m.senderId) === String(newMessage.senderId)
+      );
+
+      if (replacedPending) {
+        // Remove pending → add real one
+        const filtered = messages.filter((m) => !m.pending);
+        set({ messages: [...filtered, newMessage] });
+        return;
+      }
+
+      // If chat with sender is active
       const isChatOpen =
         selectedUser &&
         (
@@ -101,6 +150,7 @@ export const chatStore = create((set, get) => ({
         return;
       }
 
+      // If chat closed → update unread count
       const updatedUsers = users.map((u) =>
         u._id === newMessage.senderId
           ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }

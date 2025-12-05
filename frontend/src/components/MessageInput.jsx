@@ -1,6 +1,5 @@
 import { MdImage } from "react-icons/md";
 import { LuSendHorizontal } from "react-icons/lu";
-import { IoClose } from "react-icons/io5";
 import { chatStore } from "../store/chatStore";
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
@@ -8,36 +7,145 @@ import toast from "react-hot-toast";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 
+import { FaMicrophone, FaPause, FaPlay } from "react-icons/fa";
+import { IoTrashBin } from "react-icons/io5";
+
 const MessageInput = () => {
   const { sendMessage, selectedUser } = chatStore();
+
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
-
-  const fileInputRef = useRef(null);
   const [showPicker, setShowPicker] = useState(false);
-  const pickerRef = useRef(null);
 
-  const addEmoji = (emoji) => setText((prev) => prev + emoji.native);
+  // 🎤 Recording States
+  const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
-  // close emoji picker when clicking outside
-  useEffect(() => {
-    const handler = (e) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
-        setShowPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const fileInputRef = useRef(null);
+  const timerRef = useRef(null);
 
-  // clear text & image when switching user
   useEffect(() => {
     setText("");
     setImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [selectedUser]);
 
-  const handleImage = (e) => {
+  const formatTime = (sec) =>
+    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(
+      2,
+      "0"
+    )}`;
+
+  const resetRecordingState = () => {
+    clearInterval(timerRef.current);
+    setRecording(false);
+    setPaused(false);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
+
+    if (mediaRecorderRef.current?.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+    }
+    mediaRecorderRef.current = null;
+  };
+
+  const startRecording = async () => {
+    try {
+      setRecording(true);
+      setPaused(false);
+      setRecordingTime(0);
+      audioChunksRef.current = [];
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start();
+      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    } catch {
+      toast.error("Microphone blocked!");
+      setRecording(false);
+    }
+  };
+
+  const pauseRecording = () => {
+    mediaRecorderRef.current?.pause();
+    setPaused(true);
+    clearInterval(timerRef.current);
+  };
+
+  const resumeRecording = () => {
+    mediaRecorderRef.current?.resume();
+    setPaused(false);
+    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+  };
+
+  const deleteRecording = () => {
+    mediaRecorderRef.current?.stop();
+    resetRecordingState();
+  };
+
+  // ⭐ FIXED AUDIO SENDING
+  const sendAudio = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+
+    clearInterval(timerRef.current);
+
+    recorder.onstop = () => {
+      if (!audioChunksRef.current.length) {
+        toast.error("No audio recorded");
+        resetRecordingState();
+        return;
+      }
+
+      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        const base64Audio = reader.result;
+
+        resetRecordingState(); // close recording UI
+        sendMessage({
+          text: "",
+          image: "",
+          caption: "",
+          audio: base64Audio,
+        });
+      };
+
+      reader.readAsDataURL(blob);
+    };
+
+    recorder.stop(); // 🔥 the missing magic
+  };
+
+  const handleSendMessage = () => {
+    if (!text.trim() && !image)
+      return toast.error("Cannot send empty message!");
+
+    sendMessage({
+      text: image ? "" : text.trim(),
+      image,
+      caption: image ? text.trim() : "",
+      audio: "",
+    });
+
+    setText("");
+    setImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleImagePick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -45,125 +153,133 @@ const MessageInput = () => {
     reader.onloadend = () => setImage(reader.result);
   };
 
-  // SMART SEND logic → works for text OR image + caption
-  const handleSendMessage = async () => {
-    if (!text.trim() && !image) {
-      toast.error("Empty message cannot be sent!");
-      return;
-    }
-
-    await sendMessage({
-      text: image ? "" : text.trim(),       // text only if no image
-      image,
-      caption: image ? text.trim() : "",    // caption only if image exists
-    });
-
-    setText("");
-    setImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setShowPicker(false);
-  };
-
-  // ENTER fix — don't auto-send while preview modal open
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && e.shiftKey) return;
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (image) return;
-      handleSendMessage();
-    }
-  };
-
   return (
     <>
-      {/* === IMAGE PREVIEW MODAL === */}
+      {/* IMAGE PREVIEW */}
       {image && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
-
-          {/* Close */}
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
+          <img src={image} className="max-h-[75vh] max-w-[75vw] rounded-lg" />
           <button
             onClick={() => setImage(null)}
-            className="absolute top-4 right-4 text-white text-3xl hover:scale-110 transition"
+            className="absolute top-4 right-4 text-white text-3xl"
           >
-            <IoClose />
+            ✖
           </button>
-
-          {/* Preview image */}
-          <img
-            src={image}
-            alt="preview"
-            className="max-h-[38vh] max-w-[35vw] rounded-lg shadow-lg border border-white/20 object-cover"
-          />
-
-          {/* Caption input */}
           <input
             type="text"
-            placeholder="Add a caption..."
-            className="w-[55%] max-w-[20vw] mt-2 px-3 py-3 text-white bg-black/30 border border-white/30 rounded-md outline-none text-sm"
+            placeholder="Add caption..."
+            className="absolute bottom-24 w-[55%] px-3 py-2 bg-black/40 border border-white/40 text-white rounded-lg"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-
-          {/* Premium Send button */}
           <button
             onClick={handleSendMessage}
-            className="mt-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90 text-white text-sm font-semibold px-6 py-2 rounded-xl shadow-lg shadow-black/30 active:scale-95 transition"
+            className="absolute bottom-10 bg-primary px-7 py-2 rounded-lg text-white"
           >
             Send
           </button>
         </div>
       )}
 
-      {/* === MAIN INPUT BAR === */}
+      {/* MAIN INPUT BAR */}
       <div className="bg-base-200 sticky bottom-2 pb-2">
-        <div className="flex items-center gap-2 p-1 md:p-2 w-full relative">
+        <div className="flex items-center gap-2 p-2 w-full relative">
+          {recording ? (
+            /* 🔴 RECORDING PANEL */
+            <div className="flex items-center justify-center flex-1">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full animate-pulse bg-red-500/20 scale-[2.2] blur-md"></div>
 
-          {/* Emoji */}
-          <button
-            type="button"
-            onClick={() => setShowPicker((p) => !p)}
-            className="text-2xl hover:scale-110 transition"
-          >
-            😊
-          </button>
+                <div className="flex items-center gap-4 bg-slate-900 text-white px-5 py-2 rounded-full shadow-xl relative">
+                  <span className="text-lg font-semibold">
+                    ● {formatTime(recordingTime)}
+                  </span>
 
-          {showPicker && (
-            <div ref={pickerRef} className="absolute bottom-16 left-2 z-[999]">
-              <Picker data={data} theme="dark" onEmojiSelect={addEmoji} />
+                  {!paused ? (
+                    <button onClick={pauseRecording} className="text-xl">
+                      <FaPause />
+                    </button>
+                  ) : (
+                    <button onClick={resumeRecording} className="text-xl">
+                      <FaPlay />
+                    </button>
+                  )}
+
+                  <button onClick={deleteRecording} className="text-2xl">
+                    <IoTrashBin />
+                  </button>
+
+                  {paused && (
+                    <button
+                      onClick={sendAudio}
+                      className="text-[#00E5FF] text-3xl ml-auto"
+                    >
+                      <LuSendHorizontal />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          ) : (
+            /* NORMAL CHAT INPUT */
+            <>
+              <button
+                type="button"
+                className="text-2xl"
+                onClick={() => setShowPicker((p) => !p)}
+              >
+                😊
+              </button>
+
+              {showPicker && (
+                <div className="absolute bottom-20 left-2 z-[999]">
+                  <Picker
+                    data={data}
+                    theme="dark"
+                    onEmojiSelect={(emoji) =>
+                      setText((prev) => prev + emoji.native)
+                    }
+                  />
+                </div>
+              )}
+
+              <button onClick={() => fileInputRef.current.click()}>
+                <MdImage className="text-primary size-8" />
+              </button>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImagePick}
+              />
+
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 p-2 bg-slate-700 text-white rounded-lg outline-none"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+
+              {text.trim() || image ? (
+                <button
+                  onClick={handleSendMessage}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-700 border border-slate-500 text-white shadow-md"
+                >
+                  <LuSendHorizontal className="text-xl" />
+                </button>
+              ) : (
+                <button
+                  onClick={startRecording}
+                  className="w-12 h-12 flex items-center justify-center bg-slate-700 text-white rounded-full shadow-md"
+                >
+                  <FaMicrophone className="text-xl" />
+                </button>
+              )}
+            </>
           )}
-
-          {/* Upload Image */}
-          <button type="button" onClick={() => fileInputRef.current.click()}>
-            <MdImage className="size-11 text-primary" />
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleImage}
-          />
-
-          {/* Text input */}
-          <input
-            type="text"
-            placeholder="Type a message..."
-            className="flex-1 p-2 bg-slate-700 text-white rounded-lg outline-none"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-
-          {/* Send button */}
-          <button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!text.trim() && !image}
-            className="p-2 md:p-3 bg-primary text-white rounded-lg hover:bg-primary-focus shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <LuSendHorizontal className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </>
