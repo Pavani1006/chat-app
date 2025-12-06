@@ -1,3 +1,4 @@
+// controllers/messageController.js
 import Users from "../model/userModel.js";
 import Messages from "../model/messageModel.js";
 import cloudinary from "../lib/cloudinary.js";
@@ -8,27 +9,25 @@ export const contactsForSidebar = async (req, res) => {
   try {
     const loggedUserId = req.user._id;
 
-    const users = await Users.find({ _id: { $ne: loggedUserId } }).select(
-      "-password"
-    );
+    const users = await Users.find({ _id: { $ne: loggedUserId } }).select("-password");
 
-    const messages = await Messages.find({
+    const unreadMessages = await Messages.find({
       receiverId: loggedUserId,
       seenBy: { $ne: loggedUserId },
     });
 
-    const unreadCounts = {};
-    messages.forEach((msg) => {
-      unreadCounts[msg.senderId] = (unreadCounts[msg.senderId] || 0) + 1;
+    const unread = {};
+    unreadMessages.forEach((msg) => {
+      unread[msg.senderId] = (unread[msg.senderId] || 0) + 1;
     });
 
-    const updatedUsers = users.map((u) => ({
+    const updated = users.map((u) => ({
       ...u._doc,
-      unreadCount: unreadCounts[u._id] || 0,
+      unreadCount: unread[u._id] || 0,
     }));
 
-    res.status(200).json(updatedUsers);
-  } catch (error) {
+    res.status(200).json(updated);
+  } catch (err) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -52,28 +51,44 @@ export const getMessages = async (req, res) => {
   }
 };
 
-// 📌 Send message (supports text + image + caption + audio)
+// 📌 Send message (text + image + caption + audio + document)
 export const sendMessage = async (req, res) => {
   try {
     const { text, image, caption, audio } = req.body;
     const senderId = req.user._id;
     const receiverId = req.params._id;
+    const file = req.file; // PDF / DOC / PPT / ZIP uploaded via multer
 
-    // ⭐ upload image if present
     let imageUrl = "";
+    let audioUrl = "";
+    let document = { url: "", name: "" };
+
+    // upload image
     if (image) {
-      const uploadImage = await cloudinary.uploader.upload(image);
-      imageUrl = uploadImage.secure_url;
+      const img = await cloudinary.uploader.upload(image);
+      imageUrl = img.secure_url;
     }
 
-    // 🎤 upload audio if present
-    let audioUrl = "";
+    // upload audio
     if (audio) {
-      const uploadAudio = await cloudinary.uploader.upload(audio, {
-        resource_type: "video", // important for audio
-      });
-      audioUrl = uploadAudio.secure_url;
+      const aud = await cloudinary.uploader.upload(audio, { resource_type: "video" });
+      audioUrl = aud.secure_url;
     }
+
+    // upload document
+   if (file) {
+  const upload = await cloudinary.uploader.upload(file.path, {
+    resource_type: "auto",   // detects PDF, DOCX, PPT etc automatically
+    use_filename: true,      // keep original filename
+    unique_filename: false,  // prevent random cloudinary filename
+  });
+
+  document = {
+    url: upload.secure_url,
+    name: file.originalname,  // real filename saved
+  };
+}
+
 
     const newMessage = new Messages({
       senderId,
@@ -82,20 +97,20 @@ export const sendMessage = async (req, res) => {
       image: imageUrl,
       caption,
       audio: audioUrl,
+      document, // { url, name }
       seenBy: [senderId],
     });
 
     await newMessage.save();
 
+    // send via socket to receiver
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    if (receiverSocketId) io.to(receiverSocketId).emit("newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
     console.error("sendMessage error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -105,7 +120,7 @@ export const markMessagesSeen = async (req, res) => {
     const viewerId = req.user._id;
     const chatUserId = req.params._id;
 
-    const result = await Messages.updateMany(
+    const update = await Messages.updateMany(
       {
         senderId: chatUserId,
         receiverId: viewerId,
@@ -114,15 +129,13 @@ export const markMessagesSeen = async (req, res) => {
       { $addToSet: { seenBy: viewerId } }
     );
 
-    if (result.modifiedCount > 0) {
-      const senderSocketId = getReceiverSocketId(chatUserId);
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("messagesSeen", viewerId);
-      }
+    if (update.modifiedCount > 0) {
+      const socketId = getReceiverSocketId(chatUserId);
+      if (socketId) io.to(socketId).emit("messagesSeen", viewerId);
     }
 
     res.status(200).json({ success: true });
   } catch {
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };

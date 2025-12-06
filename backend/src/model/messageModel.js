@@ -8,8 +8,14 @@ const messageSchema = new mongoose.Schema(
     text: { type: String, default: "" },
     image: { type: String, default: "" },
     caption: { type: String, default: "" },
+    audio: { type: String, default: "" },
 
-    audio: { type: String, default: "" },  // ⭐ VOICE MESSAGE
+    // store BOTH file URL and filename
+    document: {
+      url: { type: String, default: "" },
+      name: { type: String, default: "" },
+    },
+
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }

@@ -1,3 +1,4 @@
+// components/MessageInput.jsx
 import { MdImage } from "react-icons/md";
 import { LuSendHorizontal } from "react-icons/lu";
 import { chatStore } from "../store/chatStore";
@@ -25,12 +26,14 @@ const MessageInput = () => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
+  const documentRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
     setText("");
     setImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (documentRef.current) documentRef.current.value = "";
   }, [selectedUser]);
 
   const formatTime = (sec) =>
@@ -94,7 +97,6 @@ const MessageInput = () => {
     resetRecordingState();
   };
 
-  // ⭐ FIXED AUDIO SENDING
   const sendAudio = () => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
@@ -114,7 +116,7 @@ const MessageInput = () => {
       reader.onloadend = () => {
         const base64Audio = reader.result;
 
-        resetRecordingState(); // close recording UI
+        resetRecordingState();
         sendMessage({
           text: "",
           image: "",
@@ -126,12 +128,13 @@ const MessageInput = () => {
       reader.readAsDataURL(blob);
     };
 
-    recorder.stop(); // 🔥 the missing magic
+    recorder.stop();
   };
 
   const handleSendMessage = () => {
-    if (!text.trim() && !image)
-      return toast.error("Cannot send empty message!");
+    if (image && !text.trim())
+      return toast.error("Please add a caption before sending!");
+    if (!text.trim() && !image) return;
 
     sendMessage({
       text: image ? "" : text.trim(),
@@ -153,31 +156,49 @@ const MessageInput = () => {
     reader.onloadend = () => setImage(reader.result);
   };
 
+const handleDocumentPick = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  sendMessage(file); // send file directly
+  toast.success("Document uploading...");
+};
+
+
   return (
     <>
-      {/* IMAGE PREVIEW */}
+      {/* IMAGE PREVIEW UI */}
       {image && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
-          <img src={image} className="max-h-[75vh] max-w-[75vw] rounded-lg" />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md animate-fadeIn px-3">
           <button
             onClick={() => setImage(null)}
-            className="absolute top-4 right-4 text-white text-3xl"
+            className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/35 size-9 flex items-center justify-center rounded-full text-lg font-bold transition backdrop-blur-sm border border-white/30"
           >
-            ✖
+            ✕
           </button>
-          <input
-            type="text"
-            placeholder="Add caption..."
-            className="absolute bottom-24 w-[55%] px-3 py-2 bg-black/40 border border-white/40 text-white rounded-lg"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <button
-            onClick={handleSendMessage}
-            className="absolute bottom-10 bg-primary px-7 py-2 rounded-lg text-white"
-          >
-            Send
-          </button>
+
+          <div className="flex flex-col items-center max-w-[350px] w-full">
+            <img
+              src={image}
+              className="max-h-[72vh] w-auto rounded-xl shadow-2xl border border-white/20 object-contain"
+            />
+
+            <input
+              type="text"
+              placeholder="Caption..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={60}
+              className="w-[85%] mt-3 p-2 text-white bg-black/25 border border-white/25 rounded-md outline-none placeholder:text-gray-300 text-[13px]"
+            />
+
+            <button
+              onClick={handleSendMessage}
+              className="w-[85%] mt-3 py-2 text-white bg-gradient-to-r from-blue-500 to-indigo-600 text-sm rounded-md font-semibold shadow-md hover:scale-[1.02] transition"
+            >
+              Send
+            </button>
+          </div>
         </div>
       )}
 
@@ -185,7 +206,6 @@ const MessageInput = () => {
       <div className="bg-base-200 sticky bottom-2 pb-2">
         <div className="flex items-center gap-2 p-2 w-full relative">
           {recording ? (
-            /* 🔴 RECORDING PANEL */
             <div className="flex items-center justify-center flex-1">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full animate-pulse bg-red-500/20 scale-[2.2] blur-md"></div>
@@ -221,7 +241,6 @@ const MessageInput = () => {
               </div>
             </div>
           ) : (
-            /* NORMAL CHAT INPUT */
             <>
               <button
                 type="button"
@@ -243,6 +262,7 @@ const MessageInput = () => {
                 </div>
               )}
 
+              {/* IMAGE PICK */}
               <button onClick={() => fileInputRef.current.click()}>
                 <MdImage className="text-primary size-8" />
               </button>
@@ -253,6 +273,18 @@ const MessageInput = () => {
                 className="hidden"
                 accept="image/*"
                 onChange={handleImagePick}
+              />
+
+              {/* DOCUMENT PICK */}
+              <button onClick={() => documentRef.current.click()} className="text-2xl">
+                📄
+              </button>
+              <input
+                type="file"
+                ref={documentRef}
+                className="hidden"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.zip"
+                onChange={handleDocumentPick}
               />
 
               <input

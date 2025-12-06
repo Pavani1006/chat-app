@@ -1,6 +1,8 @@
+// components/Messages.jsx
 import { chatStore } from "../store/chatStore";
 import { authStore } from "../store/authStore";
 import { useEffect, useRef, useState } from "react";
+import { FaRegFileAlt } from "react-icons/fa";
 
 const Messages = () => {
   const {
@@ -14,7 +16,6 @@ const Messages = () => {
 
   const { loggedUser } = authStore();
   const messagesEndRef = useRef(null);
-
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
@@ -69,8 +70,6 @@ const Messages = () => {
 
   return (
     <div className="p-4 space-y-4 overflow-y-auto relative">
-
-      {/* Full screen image preview */}
       {previewImage && (
         <div
           className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
@@ -101,11 +100,10 @@ const Messages = () => {
               </p>
             )}
 
-            {/* Sender bubble */}
             {isSender ? (
-              <div className="flex justify-end gap-2">
+              // ======================= SENDER =======================
+              <div className="flex justify-end">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow">
-
                   {message.image && (
                     <img
                       src={message.image}
@@ -114,7 +112,7 @@ const Messages = () => {
                     />
                   )}
 
-                  {message.caption && (
+                  {message.caption && message.image && !message.document && (
                     <p className="text-sm mt-2">{message.caption}</p>
                   )}
 
@@ -126,11 +124,38 @@ const Messages = () => {
                     />
                   )}
 
+                  {/* 📄 DOCUMENT CARD */}
+                  {message.document && (
+                    <div
+                      onClick={() => {
+  const a = document.createElement("a");
+  a.href = message.document;
+  a.download = message.caption || "document";  // real file name
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}}
+
+                      className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
+                    >
+                      <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
+                        <FaRegFileAlt className="text-xl" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[14px] text-[#1C1F23] break-all leading-tight">
+                          {message.caption || "Document"}
+                        </span>
+                        <span className="text-[11px] text-[#5A6270]">
+                          Tap to open
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {message.text && (
                     <p className="text-sm break-words">{message.text}</p>
                   )}
 
-                  {/* ⭐ TIMESTAMP (1st line) + STATUS (2nd line) */}
                   <div className="mt-1 text-right">
                     <p className="text-[10px] opacity-75">
                       {new Date(message.createdAt).toLocaleTimeString([], {
@@ -138,13 +163,12 @@ const Messages = () => {
                         minute: "2-digit",
                       })}
                     </p>
-
                     {message.seenBy?.includes(selectedUser._id) ? (
-                      <p className="text-[11px] text-blue-500  mt-[1px]">
+                      <p className="text-[11px] text-blue-500 mt-[1px]">
                         Seen
                       </p>
                     ) : (
-                      <p className="text-[11px] text-gray-500  mt-[1px]">
+                      <p className="text-[11px] text-gray-500 mt-[1px]">
                         Delivered
                       </p>
                     )}
@@ -152,10 +176,9 @@ const Messages = () => {
                 </div>
               </div>
             ) : (
-              /* Receiver bubble */
-              <div className="flex gap-2">
+              // ======================= RECEIVER =======================
+              <div className="flex">
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
-
                   {message.image && (
                     <img
                       src={message.image}
@@ -164,7 +187,7 @@ const Messages = () => {
                     />
                   )}
 
-                  {message.caption && (
+                  {message.caption && message.image && !message.document && (
                     <p className="text-sm mt-2">{message.caption}</p>
                   )}
 
@@ -174,6 +197,33 @@ const Messages = () => {
                       className="mt-3 w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
                       src={message.audio}
                     />
+                  )}
+
+                  {message.document && (
+                    <div
+                      onClick={() => {
+  const a = document.createElement("a");
+  a.href = message.document;
+  a.download = message.caption || "document";  // real file name
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}}
+
+                      className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
+                    >
+                      <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
+                        <FaRegFileAlt className="text-xl" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[14px] text-[#1C1F23] break-all leading-tight">
+                          {message.caption || "Document"}
+                        </span>
+                        <span className="text-[11px] text-[#5A6270]">
+                          Tap to open
+                        </span>
+                      </div>
+                    </div>
                   )}
 
                   {message.text && (
