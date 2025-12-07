@@ -1,10 +1,10 @@
-// components/MessageInput.jsx
 import { MdImage } from "react-icons/md";
 import { LuSendHorizontal } from "react-icons/lu";
 import { chatStore } from "../store/chatStore";
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
-
+import axios from "axios";
+import { axiosInstance } from "../lib/axios"
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 
@@ -26,14 +26,14 @@ const MessageInput = () => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
-  const documentRef = useRef(null);
+  const docInputRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
     setText("");
     setImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    if (documentRef.current) documentRef.current.value = "";
+    if (docInputRef.current) docInputRef.current.value = "";
   }, [selectedUser]);
 
   const formatTime = (sec) =>
@@ -132,8 +132,7 @@ const MessageInput = () => {
   };
 
   const handleSendMessage = () => {
-    if (image && !text.trim())
-      return toast.error("Please add a caption before sending!");
+    if (image && !text.trim()) return toast.error("Add caption before sending!");
     if (!text.trim() && !image) return;
 
     sendMessage({
@@ -156,45 +155,73 @@ const MessageInput = () => {
     reader.onloadend = () => setImage(reader.result);
   };
 
-const handleDocumentPick = (e) => {
+  // 📄 PDF / DOC / PPT upload
+const handleDocumentPick = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  sendMessage(file); // send file directly
-  toast.success("Document uploading...");
+  try {
+    toast.loading("Uploading document...");
+
+    const cloudName = "dzguzvn0u"; // Your Cloudinary Name
+    const uploadPreset = "my_preset"; // From Step 1
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset); 
+    formData.append("folder", "chat_documents");
+
+    const cloudRes = await axios.post(
+      `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
+      formData
+    );
+
+    sendMessage({
+      text: "",
+      image: "",
+      caption: file.name,
+      audio: "",
+      fileUrl: cloudRes.data.secure_url,
+      fileName: file.name
+    });
+
+    toast.dismiss();
+    toast.success("Document sent!");
+  } catch (error) {
+    toast.dismiss();
+    toast.error("Upload failed! Check Cloudinary settings.");
+    console.error("Cloudinary Error:", error.response?.data || error.message);
+  }
+  e.target.value = "";
 };
 
 
   return (
     <>
-      {/* IMAGE PREVIEW UI */}
       {image && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md animate-fadeIn px-3">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md px-3">
           <button
             onClick={() => setImage(null)}
-            className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/35 size-9 flex items-center justify-center rounded-full text-lg font-bold transition backdrop-blur-sm border border-white/30"
+            className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/35 size-9 flex items-center justify-center rounded-full text-lg font-bold"
           >
             ✕
           </button>
-
           <div className="flex flex-col items-center max-w-[350px] w-full">
             <img
               src={image}
               className="max-h-[72vh] w-auto rounded-xl shadow-2xl border border-white/20 object-contain"
             />
-
             <input
               type="text"
               placeholder="Caption..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               maxLength={60}
-              className="w-[85%] mt-3 p-2 text-white bg-black/25 border border-white/25 rounded-md outline-none placeholder:text-gray-300 text-[13px]"
+              className="w-[85%] mt-3 p-2 text-white bg-black/25 border border-white/25 rounded-md text-[13px]"
             />
-
             <button
               onClick={handleSendMessage}
-              className="w-[85%] mt-3 py-2 text-white bg-gradient-to-r from-blue-500 to-indigo-600 text-sm rounded-md font-semibold shadow-md hover:scale-[1.02] transition"
+              className="w-[85%] mt-3 py-2 text-white bg-gradient-to-r from-blue-500 to-indigo-600 text-sm rounded-md font-semibold"
             >
               Send
             </button>
@@ -202,19 +229,16 @@ const handleDocumentPick = (e) => {
         </div>
       )}
 
-      {/* MAIN INPUT BAR */}
       <div className="bg-base-200 sticky bottom-2 pb-2">
         <div className="flex items-center gap-2 p-2 w-full relative">
           {recording ? (
             <div className="flex items-center justify-center flex-1">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full animate-pulse bg-red-500/20 scale-[2.2] blur-md"></div>
-
-                <div className="flex items-center gap-4 bg-slate-900 text-white px-5 py-2 rounded-full shadow-xl relative">
+                <div className="flex items-center gap-4 bg-slate-900 text-white px-5 py-2 rounded-full shadow-xl">
                   <span className="text-lg font-semibold">
                     ● {formatTime(recordingTime)}
                   </span>
-
                   {!paused ? (
                     <button onClick={pauseRecording} className="text-xl">
                       <FaPause />
@@ -224,16 +248,11 @@ const handleDocumentPick = (e) => {
                       <FaPlay />
                     </button>
                   )}
-
                   <button onClick={deleteRecording} className="text-2xl">
                     <IoTrashBin />
                   </button>
-
                   {paused && (
-                    <button
-                      onClick={sendAudio}
-                      className="text-[#00E5FF] text-3xl ml-auto"
-                    >
+                    <button onClick={sendAudio} className="text-[#00E5FF] text-3xl ml-auto">
                       <LuSendHorizontal />
                     </button>
                   )}
@@ -242,11 +261,7 @@ const handleDocumentPick = (e) => {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                className="text-2xl"
-                onClick={() => setShowPicker((p) => !p)}
-              >
+              <button type="button" className="text-2xl" onClick={() => setShowPicker((p) => !p)}>
                 😊
               </button>
 
@@ -255,18 +270,15 @@ const handleDocumentPick = (e) => {
                   <Picker
                     data={data}
                     theme="dark"
-                    onEmojiSelect={(emoji) =>
-                      setText((prev) => prev + emoji.native)
-                    }
+                    onEmojiSelect={(emoji) => setText((prev) => prev + emoji.native)}
                   />
                 </div>
               )}
 
-              {/* IMAGE PICK */}
+              {/* Image */}
               <button onClick={() => fileInputRef.current.click()}>
                 <MdImage className="text-primary size-8" />
               </button>
-
               <input
                 type="file"
                 ref={fileInputRef}
@@ -275,13 +287,13 @@ const handleDocumentPick = (e) => {
                 onChange={handleImagePick}
               />
 
-              {/* DOCUMENT PICK */}
-              <button onClick={() => documentRef.current.click()} className="text-2xl">
+              {/* Document */}
+              <button onClick={() => docInputRef.current.click()} className="text-[22px]">
                 📄
               </button>
               <input
                 type="file"
-                ref={documentRef}
+                ref={docInputRef}
                 className="hidden"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.zip"
                 onChange={handleDocumentPick}
@@ -298,7 +310,7 @@ const handleDocumentPick = (e) => {
               {text.trim() || image ? (
                 <button
                   onClick={handleSendMessage}
-                  className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-700 border border-slate-500 text-white shadow-md"
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-700 text-white"
                 >
                   <LuSendHorizontal className="text-xl" />
                 </button>

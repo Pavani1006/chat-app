@@ -1,20 +1,27 @@
+// models/messageModel.js
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
-    senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    receiverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
     text: { type: String, default: "" },
-    image: { type: String, default: "" },
+    image: { type: String, default: "" },   // cloudinary url
     caption: { type: String, default: "" },
-    audio: { type: String, default: "" },
+    audio: { type: String, default: "" },   // cloudinary url
 
-    // store BOTH file URL and filename
-    document: {
-      url: { type: String, default: "" },
-      name: { type: String, default: "" },
-    },
+    // 📄 File (pdf, doc, ppt etc)
+    fileUrl: { type: String, default: "" },
+    fileName: { type: String, default: "" },
 
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },

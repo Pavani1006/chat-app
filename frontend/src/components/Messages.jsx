@@ -36,10 +36,8 @@ const Messages = () => {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-
     if (date.toDateString() === today.toDateString()) return "Today";
     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-
     return date.toLocaleDateString([], {
       day: "2-digit",
       month: "short",
@@ -70,6 +68,8 @@ const Messages = () => {
 
   return (
     <div className="p-4 space-y-4 overflow-y-auto relative">
+
+      {/* Full screen image preview */}
       {previewImage && (
         <div
           className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
@@ -100,10 +100,12 @@ const Messages = () => {
               </p>
             )}
 
+            {/* ======================= SENDER ======================= */}
             {isSender ? (
-              // ======================= SENDER =======================
               <div className="flex justify-end">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow">
+
+                  {/* Image */}
                   {message.image && (
                     <img
                       src={message.image}
@@ -112,10 +114,12 @@ const Messages = () => {
                     />
                   )}
 
-                  {message.caption && message.image && !message.document && (
+                  {/* Caption for image */}
+                  {message.caption && message.image && !message.fileUrl && (
                     <p className="text-sm mt-2">{message.caption}</p>
                   )}
 
+                  {/* Audio */}
                   {message.audio && (
                     <audio
                       controls
@@ -124,26 +128,23 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* 📄 DOCUMENT CARD */}
-                  {message.document && (
+                  {/* 📄 File card (PDF / DOC / PPT) */}
+                  {message.fileUrl && (
                     <div
-                      onClick={() => {
-  const a = document.createElement("a");
-  a.href = message.document;
-  a.download = message.caption || "document";  // real file name
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}}
-
+                      onClick={() =>
+                        window.open(
+                          `https://docs.google.com/gview?embedded=true&url=${message.fileUrl}`,
+                          "_blank"
+                        )
+                      }
                       className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
                     >
                       <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
                         <FaRegFileAlt className="text-xl" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-medium text-[14px] text-[#1C1F23] break-all leading-tight">
-                          {message.caption || "Document"}
+                        <span className="font-medium text-[14px] text-[#1C1F23] break-all">
+                          {message.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
                           Tap to open
@@ -152,9 +153,8 @@ const Messages = () => {
                     </div>
                   )}
 
-                  {message.text && (
-                    <p className="text-sm break-words">{message.text}</p>
-                  )}
+                  {/* Text */}
+                  {message.text && <p className="text-sm break-words">{message.text}</p>}
 
                   <div className="mt-1 text-right">
                     <p className="text-[10px] opacity-75">
@@ -164,21 +164,19 @@ const Messages = () => {
                       })}
                     </p>
                     {message.seenBy?.includes(selectedUser._id) ? (
-                      <p className="text-[11px] text-blue-500 mt-[1px]">
-                        Seen
-                      </p>
+                      <p className="text-[11px] text-blue-500 mt-[1px]">Seen</p>
                     ) : (
-                      <p className="text-[11px] text-gray-500 mt-[1px]">
-                        Delivered
-                      </p>
+                      <p className="text-[11px] text-gray-500 mt-[1px]">Delivered</p>
                     )}
                   </div>
                 </div>
               </div>
             ) : (
-              // ======================= RECEIVER =======================
+              /* ======================= RECEIVER ======================= */
               <div className="flex">
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
+
+                  {/* Image */}
                   {message.image && (
                     <img
                       src={message.image}
@@ -187,10 +185,12 @@ const Messages = () => {
                     />
                   )}
 
-                  {message.caption && message.image && !message.document && (
+                  {/* Caption for image */}
+                  {message.caption && message.image && !message.fileUrl && (
                     <p className="text-sm mt-2">{message.caption}</p>
                   )}
 
+                  {/* Audio */}
                   {message.audio && (
                     <audio
                       controls
@@ -199,25 +199,23 @@ const Messages = () => {
                     />
                   )}
 
-                  {message.document && (
+                  {/* 📄 File */}
+                  {message.fileUrl && (
                     <div
-                      onClick={() => {
-  const a = document.createElement("a");
-  a.href = message.document;
-  a.download = message.caption || "document";  // real file name
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}}
-
+                      onClick={() =>
+                        window.open(
+                          `https://docs.google.com/gview?embedded=true&url=${message.fileUrl}`,
+                          "_blank"
+                        )
+                      }
                       className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
                     >
                       <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
                         <FaRegFileAlt className="text-xl" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-medium text-[14px] text-[#1C1F23] break-all leading-tight">
-                          {message.caption || "Document"}
+                        <span className="font-medium text-[14px] text-[#1C1F23] break-all">
+                          {message.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
                           Tap to open
@@ -226,9 +224,8 @@ const Messages = () => {
                     </div>
                   )}
 
-                  {message.text && (
-                    <p className="text-sm break-words">{message.text}</p>
-                  )}
+                  {/* Text */}
+                  {message.text && <p className="text-sm break-words">{message.text}</p>}
 
                   <p className="text-[10px] opacity-70 mt-1">
                     {new Date(message.createdAt).toLocaleTimeString([], {

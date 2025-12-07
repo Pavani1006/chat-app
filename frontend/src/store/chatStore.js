@@ -37,59 +37,40 @@ export const chatStore = create((set, get) => ({
   },
 
   // 📩 SEND MESSAGE  (supports JSON + FormData)
- sendMessage: async (data) => {
+// 📩 SEND MESSAGE  (JSON for text / img / audio, FormData for files)
+sendMessage: async (data) => {
   const { selectedUser, messages } = get();
   if (!selectedUser) return;
 
   const loggedUser = authStore.getState().loggedUser;
-
-  let payload;
-  let headers = {};
-
-  // 📌 Document upload (PDF / DOC / PPT)
-  if (data instanceof File) {
-    payload = new FormData();
-    payload.append("file", data);
-    payload.append("text", "");
-    headers["Content-Type"] = "multipart/form-data";
-  }
-  // 📌 Image / audio / text (base64 or string)
-  else {
-    payload = data;
-  }
-
+  
+  // Optimistic update
   const tmpId = uuid();
   const temp = {
     _id: tmpId,
     senderId: loggedUser._id,
     receiverId: selectedUser._id,
-    text: payload.text || "",
-    image: payload.image || "",
-    caption: payload.caption || "",
-    audio: payload.audio || "",
-    document: payload instanceof FormData ? "uploading..." : "",
+    text: data.text || "",
+    image: data.image || "",
+    fileName: data.fileName || "",
+    fileUrl: data.pdfFile ? "uploading..." : "",
     pending: true,
-    createdAt: new Date().toISOString(),
     seenBy: [loggedUser._id],
+    createdAt: new Date().toISOString(),
   };
 
   set({ messages: [...messages, temp] });
 
   try {
-    const res = await axiosInstance.post(
-      `/message/sendmessage/${selectedUser._id}`,
-      payload,
-      { headers }
-    );
-
+    const res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, data);
     set({
       messages: get().messages.map((m) => (m._id === tmpId ? res.data : m)),
     });
   } catch {
     set({ messages: get().messages.filter((m) => m._id !== tmpId) });
-    toast.error("Failed to send message");
   }
 },
+
 
 
   // 📌 Select chat
