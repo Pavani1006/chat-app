@@ -15,14 +15,20 @@ const messageSchema = new mongoose.Schema(
     },
 
     text: { type: String, default: "" },
-    image: { type: String, default: "" },   // cloudinary url
+
+    // 📸 Image message
+    image: { type: String, default: "" },
     caption: { type: String, default: "" },
-    audio: { type: String, default: "" },   // cloudinary url
 
-    // 📄 File (pdf, doc, ppt etc)
-    fileUrl: { type: String, default: "" },
-    fileName: { type: String, default: "" },
+    // 🎤 Audio message
+    audio: { type: String, default: "" },
 
+    // 📄 File message (PDF/docs)
+    fileUrl: { type: String, default: "" }, // localhost URL
+    fileName: { type: String, default: "" }, // original file name
+    fileType: { type: String, default: "" }, // pdf / doc / ppt etc.
+
+    // 👁️ Seen status
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }

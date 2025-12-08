@@ -36,8 +36,10 @@ const Messages = () => {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
+
     if (date.toDateString() === today.toDateString()) return "Today";
     if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
     return date.toLocaleDateString([], {
       day: "2-digit",
       month: "short",
@@ -67,8 +69,7 @@ const Messages = () => {
     );
 
   return (
-    <div className="p-4 space-y-4 overflow-y-auto relative">
-
+    <div className="p-4 space-y-4 overflow-y-auto relative ">
       {/* Full screen image preview */}
       {previewImage && (
         <div
@@ -100,7 +101,7 @@ const Messages = () => {
               </p>
             )}
 
-            {/* ======================= SENDER ======================= */}
+            {/* =================== SENDER =================== */}
             {isSender ? (
               <div className="flex justify-end">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow">
@@ -114,9 +115,9 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* Caption for image */}
-                  {message.caption && message.image && !message.fileUrl && (
-                    <p className="text-sm mt-2">{message.caption}</p>
+                  {/* Caption (image OR document) */}
+                  {message.caption && (
+                    <p className="text-sm mt-2 break-words">{message.caption}</p>
                   )}
 
                   {/* Audio */}
@@ -128,15 +129,10 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* 📄 File card (PDF / DOC / PPT) */}
+                  {/* File */}
                   {message.fileUrl && (
                     <div
-                      onClick={() =>
-                        window.open(
-                          `https://docs.google.com/gview?embedded=true&url=${message.fileUrl}`,
-                          "_blank"
-                        )
-                      }
+                      onClick={() => window.open(message.fileUrl, "_blank")}
                       className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
                     >
                       <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
@@ -147,7 +143,7 @@ const Messages = () => {
                           {message.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
-                          Tap to open
+                          Tap to view / download
                         </span>
                       </div>
                     </div>
@@ -172,7 +168,7 @@ const Messages = () => {
                 </div>
               </div>
             ) : (
-              /* ======================= RECEIVER ======================= */
+              /* =================== RECEIVER =================== */
               <div className="flex">
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
 
@@ -185,9 +181,9 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* Caption for image */}
-                  {message.caption && message.image && !message.fileUrl && (
-                    <p className="text-sm mt-2">{message.caption}</p>
+                  {/* Caption (image OR document) */}
+                  {message.caption && (
+                    <p className="text-sm mt-2 break-words">{message.caption}</p>
                   )}
 
                   {/* Audio */}
@@ -199,15 +195,10 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* 📄 File */}
+                  {/* File */}
                   {message.fileUrl && (
                     <div
-                      onClick={() =>
-                        window.open(
-                          `https://docs.google.com/gview?embedded=true&url=${message.fileUrl}`,
-                          "_blank"
-                        )
-                      }
+                      onClick={() => window.open(message.fileUrl, "_blank")}
                       className="mt-2 bg-[#F6F8FA] px-4 py-3 rounded-xl shadow cursor-pointer hover:bg-[#eef1f4] transition flex gap-3 items-center"
                     >
                       <div className="bg-[#E7EEFF] text-[#3662E3] p-2 rounded-md flex items-center justify-center">
@@ -218,7 +209,7 @@ const Messages = () => {
                           {message.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
-                          Tap to open
+                          Tap to view / download
                         </span>
                       </div>
                     </div>

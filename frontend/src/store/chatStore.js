@@ -36,42 +36,62 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // 📩 SEND MESSAGE  (supports JSON + FormData)
-// 📩 SEND MESSAGE  (JSON for text / img / audio, FormData for files)
-sendMessage: async (data) => {
-  const { selectedUser, messages } = get();
-  if (!selectedUser) return;
+  // 📩 SEND MESSAGE (auto handles JSON + FormData)
+  sendMessage: async (data) => {
+    const { selectedUser, messages } = get();
+    if (!selectedUser) return;
 
-  const loggedUser = authStore.getState().loggedUser;
-  
-  // Optimistic update
-  const tmpId = uuid();
-  const temp = {
-    _id: tmpId,
-    senderId: loggedUser._id,
-    receiverId: selectedUser._id,
-    text: data.text || "",
-    image: data.image || "",
-    fileName: data.fileName || "",
-    fileUrl: data.pdfFile ? "uploading..." : "",
-    pending: true,
-    seenBy: [loggedUser._id],
-    createdAt: new Date().toISOString(),
-  };
+    const loggedUser = authStore.getState().loggedUser;
 
-  set({ messages: [...messages, temp] });
+    // Optimistic temp preview
+    const tmpId = uuid();
+    const temp = {
+      _id: tmpId,
+      senderId: loggedUser._id,
+      receiverId: selectedUser._id,
+      text: data.text || "",
+      image: data.image || "",
+      audio: data.audio || "",
+      caption: data.caption || "",
+      fileName: data.file?.name || "",
+      fileUrl: data.file ? "uploading..." : "",
+      pending: true,
+      seenBy: [loggedUser._id],
+      createdAt: new Date().toISOString(),
+    };
 
-  try {
-    const res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, data);
-    set({
-      messages: get().messages.map((m) => (m._id === tmpId ? res.data : m)),
-    });
-  } catch {
-    set({ messages: get().messages.filter((m) => m._id !== tmpId) });
-  }
-},
+    set({ messages: [...messages, temp] });
 
+    try {
+      let res;
 
+      // 🔥 If contains file → use FormData
+      if (data.file instanceof File) {
+        const form = new FormData();
+        form.append("file", data.file);
+        form.append("text", data.text || "");
+        form.append("image", data.image || "");
+        form.append("audio", data.audio || "");
+        form.append("caption", data.caption || "");
+
+        res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        // 🔥 JSON request for text / image base64 / audio
+        res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, data);
+      }
+
+      // Replace pending temp message with real message
+      set({
+        messages: get().messages.map((m) => (m._id === tmpId ? res.data : m)),
+      });
+    } catch (err) {
+      console.log(err);
+      set({ messages: get().messages.filter((m) => m._id !== tmpId) });
+      toast.error("Failed to send message.");
+    }
+  },
 
   // 📌 Select chat
   setSelectedUser: (user) => {
