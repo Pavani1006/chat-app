@@ -24,7 +24,7 @@ const Messages = () => {
 
   useEffect(() => {
     listenForNewMessage();
-    return () => stopListeningForMessages();
+    return () => stopListeningForNewMessage();
   }, []);
 
   useEffect(() => {
@@ -69,7 +69,8 @@ const Messages = () => {
     );
 
   return (
-    <div className="p-4 space-y-4 overflow-y-auto relative ">
+    <div className="p-4 space-y-4 overflow-y-auto relative pb-10">
+
       {/* Full screen image preview */}
       {previewImage && (
         <div
@@ -106,7 +107,7 @@ const Messages = () => {
               <div className="flex justify-end">
                 <div className="max-w-[70%] bg-white text-gray-900 py-2 px-4 rounded-2xl rounded-br-none shadow">
 
-                  {/* Image */}
+                  {/* IMAGE */}
                   {message.image && (
                     <img
                       src={message.image}
@@ -115,12 +116,12 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* Caption (image OR document) */}
-                  {message.caption && (
+                  {/* CAPTION — only for image */}
+                  {message.caption && message.image && (
                     <p className="text-sm mt-2 break-words">{message.caption}</p>
                   )}
 
-                  {/* Audio */}
+                  {/* AUDIO */}
                   {message.audio && (
                     <audio
                       controls
@@ -129,7 +130,7 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* File */}
+                  {/* DOCUMENT */}
                   {message.fileUrl && (
                     <div
                       onClick={() => window.open(message.fileUrl, "_blank")}
@@ -142,27 +143,30 @@ const Messages = () => {
                         <span className="font-medium text-[14px] text-[#1C1F23] break-all">
                           {message.fileName || "Document"}
                         </span>
-                        <span className="text-[11px] text-[#5A6270]">
-                          Tap to view / download
-                        </span>
+                        <span className="text-[11px] text-[#5A6270]">Tap to view / download</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Text */}
+                  {/* TEXT */}
                   {message.text && <p className="text-sm break-words">{message.text}</p>}
 
-                  <div className="mt-1 text-right">
-                    <p className="text-[10px] opacity-75">
+                  {/* TIME + STATUS */}
+                  <div className="flex justify-end gap-1 mt-1">
+                    <span className="text-[10px] text-gray-500 opacity-70">
                       {new Date(message.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </p>
+                    </span>
                     {message.seenBy?.includes(selectedUser._id) ? (
-                      <p className="text-[11px] text-blue-500 mt-[1px]">Seen</p>
+                      <span className="text-[10px] text-blue-500 opacity-80">
+                        Seen
+                      </span>
                     ) : (
-                      <p className="text-[11px] text-gray-500 mt-[1px]">Delivered</p>
+                      <span className="text-[10px] text-gray-500 opacity-70">
+                        Delivered
+                      </span>
                     )}
                   </div>
                 </div>
@@ -172,7 +176,6 @@ const Messages = () => {
               <div className="flex">
                 <div className="max-w-[70%] bg-gray-200 text-gray-900 py-2 px-4 rounded-2xl rounded-bl-none shadow">
 
-                  {/* Image */}
                   {message.image && (
                     <img
                       src={message.image}
@@ -181,12 +184,11 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* Caption (image OR document) */}
-                  {message.caption && (
+                  {/* CAPTION — only for image */}
+                  {message.caption && message.image && (
                     <p className="text-sm mt-2 break-words">{message.caption}</p>
                   )}
 
-                  {/* Audio */}
                   {message.audio && (
                     <audio
                       controls
@@ -195,7 +197,6 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* File */}
                   {message.fileUrl && (
                     <div
                       onClick={() => window.open(message.fileUrl, "_blank")}
@@ -205,7 +206,7 @@ const Messages = () => {
                         <FaRegFileAlt className="text-xl" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-medium text-[14px] text-[#1C1F23] break-all">
+                        <span className="font-medium text-[14px] break-all">
                           {message.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
@@ -215,15 +216,14 @@ const Messages = () => {
                     </div>
                   )}
 
-                  {/* Text */}
                   {message.text && <p className="text-sm break-words">{message.text}</p>}
 
-                  <p className="text-[10px] opacity-70 mt-1">
+                  <span className="text-[10px] text-gray-500 opacity-70 mt-1 block text-right">
                     {new Date(message.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-                  </p>
+                  </span>
                 </div>
               </div>
             )}

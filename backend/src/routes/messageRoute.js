@@ -34,6 +34,10 @@ const fileFilter = (req, file, cb) => {
     "audio/webm",
     "audio/wav",
     "audio/ogg",
+     "video/mp4",
+  "video/webm",
+  "video/mkv",
+  "video/ogg",
   ];
 
   if (allowed.includes(file.mimetype)) cb(null, true);
