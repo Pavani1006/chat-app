@@ -5,18 +5,20 @@ import { chatStore } from "../store/chatStore";
 
 const HomePage = () => {
   const { selectedUser } = chatStore();
+
   return (
-    <div className="flex flex-row h-full overflow-hidden bg-base-100 rounded-lg shadow-cl w-full">
-      {/* Changed to w-1/4 to ensure it takes up 25% of the width */}
-      <div className="w-1/4">
-        <Sidebar />
-      </div>
-      
+    <div className="flex h-full w-full overflow-hidden bg-base-100 rounded-lg shadow-cl">
+
+      {/* Sidebar - NO WRAPPER */}
+      <Sidebar />
+
+      {/* Chat */}
       <main className="flex-1 bg-gray-900 overflow-hidden min-w-0">
         {selectedUser ? <ChatContainer /> : <NoChatSelected />}
       </main>
-      
+
     </div>
   );
 };
+
 export default HomePage;
