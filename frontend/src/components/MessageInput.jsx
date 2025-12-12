@@ -30,15 +30,16 @@ const MessageInput = () => {
   const videoInputRef = useRef(null);
   const timerRef = useRef(null);
 
-  // refs for closing popups
   const pickerRef = useRef(null);
   const attachmentRef = useRef(null);
 
-  // close popups on outside click
+  // Close popups on clicking outside
   useEffect(() => {
     const handleOutside = (e) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPicker(false);
-      if (attachmentRef.current && !attachmentRef.current.contains(e.target)) setShowAttachmentMenu(false);
+      if (pickerRef.current && !pickerRef.current.contains(e.target))
+        setShowPicker(false);
+      if (attachmentRef.current && !attachmentRef.current.contains(e.target))
+        setShowAttachmentMenu(false);
     };
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
@@ -51,7 +52,9 @@ const MessageInput = () => {
   }, [selectedUser]);
 
   const formatTime = (sec) =>
-    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(
+      sec % 60
+    ).padStart(2, "0")}`;
 
   const resetRecordingState = () => {
     clearInterval(timerRef.current);
@@ -63,6 +66,7 @@ const MessageInput = () => {
       mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
   };
 
+  // AUDIO RECORDING
   const startRecording = async () => {
     try {
       setShowRecordingUI(true);
@@ -74,32 +78,52 @@ const MessageInput = () => {
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => e.data.size > 0 && audioChunksRef.current.push(e.data);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
 
       recorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
+        const file = new File([blob], `voice_${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
+
         resetRecordingState();
-        sendMessage({ file, text: "", caption: "", image: "", audio: "" });
+
+        sendMessage({
+          file,
+          text: "",
+          caption: "",
+          image: "",
+          audio: "",
+        });
       };
 
       recorder.start();
-      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1);
+      }, 1000);
     } catch {
       toast.error("Microphone blocked!");
     }
   };
 
   const pauseRecording = () => {
-    try { mediaRecorderRef.current?.pause(); } catch {}
+    try {
+      mediaRecorderRef.current?.pause();
+    } catch {}
     setPaused(true);
     clearInterval(timerRef.current);
   };
 
   const resumeRecording = () => {
-    try { mediaRecorderRef.current?.resume(); } catch {}
+    try {
+      mediaRecorderRef.current?.resume();
+    } catch {}
     setPaused(false);
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    timerRef.current = setInterval(() => {
+      setRecordingTime((t) => t + 1);
+    }, 1000);
   };
 
   const deleteRecording = () => {
@@ -108,48 +132,74 @@ const MessageInput = () => {
   };
 
   const sendAudio = () => {
-    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current?.state !== "inactive")
+      mediaRecorderRef.current.stop();
   };
 
+  // SEND TEXT / IMAGE (base64)
   const handleSendMessage = () => {
     if (!text.trim() && !image) return;
+
     sendMessage({
       text: image ? "" : text.trim(),
       image: image || "",
       caption: image ? text.trim() : "",
       audio: "",
     });
+
     setText("");
     setImage(null);
   };
 
+  // IMAGE PICK (base64 preview)
   const handleImagePick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onloadend = () => setImage(reader.result);
     reader.readAsDataURL(file);
+
     setShowAttachmentMenu(false);
   };
 
+  // DOCUMENT PICK
   const handleDocumentPick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    sendMessage({ file, text: "", caption: file.name, image: "", audio: "" });
+
+    sendMessage({
+      file,
+      text: "",
+      caption: file.name,
+      image: "",
+      audio: "",
+    });
+
     toast.success("Document sending...");
     setShowAttachmentMenu(false);
   };
 
+  // VIDEO PICK
   const handleVideoPick = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    sendMessage({ file, text: "", caption: file.name, image: "", audio: "" });
+
+    sendMessage({
+      file,
+      text: "",
+      caption: file.name,
+      image: "",
+      audio: "",
+    });
+
     toast.success("Video sending...");
     setShowAttachmentMenu(false);
   };
 
   return (
     <>
+      {/* IMAGE PREVIEW OVERLAY */}
       {image && (
         <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-md flex justify-center items-center px-3">
           <button
@@ -158,16 +208,22 @@ const MessageInput = () => {
           >
             ✕
           </button>
+
           <div className="flex flex-col items-center max-w-[350px] w-full">
-            <img src={image} className="max-h-[72vh] rounded-lg shadow-xl border border-white/30" />
+            <img
+              src={image}
+              className="max-h-[72vh] rounded-lg shadow-xl border border-white/30"
+            />
+
             <input
               type="text"
               placeholder="Caption..."
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-[85%] px-2 py-2 rounded-md bg-black/30 text-white mt-3 text-sm"
               maxLength={60}
+              className="w-[85%] px-2 py-2 rounded-md bg-black/30 text-white mt-3 text-sm"
             />
+
             <button
               onClick={handleSendMessage}
               className="bg-gradient-to-r from-blue-500 to-indigo-600 w-[85%] mt-3 py-2 rounded-md text-white font-semibold"
@@ -178,23 +234,39 @@ const MessageInput = () => {
         </div>
       )}
 
+      {/* AUDIO RECORDING OVERLAY */}
       {showRecordingUI && (
         <div className="fixed inset-0 z-[9999] flex justify-center items-center bg-black/40 backdrop-blur-md">
           <div className="flex items-center gap-4 bg-[#130c1c] text-pink-200 px-4 py-2 rounded-full shadow-xl border border-pink-300/20">
             <span className="text-base font-bold">● {formatTime(recordingTime)}</span>
-            {!paused ? <button onClick={pauseRecording}><FaPause size={18} /></button>
-                     : <button onClick={resumeRecording}><FaPlay size={18} /></button>}
-            <button onClick={deleteRecording}><IoTrashBin size={20} /></button>
-            <button onClick={sendAudio} className="text-cyan-300"><LuSendHorizontal size={24} /></button>
+
+            {!paused ? (
+              <button onClick={pauseRecording}>
+                <FaPause size={18} />
+              </button>
+            ) : (
+              <button onClick={resumeRecording}>
+                <FaPlay size={18} />
+              </button>
+            )}
+
+            <button onClick={deleteRecording}>
+              <IoTrashBin size={20} />
+            </button>
+
+            <button onClick={sendAudio} className="text-cyan-300">
+              <LuSendHorizontal size={24} />
+            </button>
           </div>
         </div>
       )}
 
+      {/* MAIN INPUT AREA */}
       <div className="bg-base-200 sticky bottom-2 pb-2">
         <div className="flex items-center gap-2 p-2 w-full max-w-[98%] mx-auto relative">
           <div className="flex flex-1 items-center bg-slate-700 rounded-2xl px-3 py-2 relative shadow-inner">
-
-            {/* Attachment */}
+            
+            {/* ATTACHMENT MENU */}
             <div ref={attachmentRef} className="relative flex items-center">
               <button
                 onClick={() => setShowAttachmentMenu((p) => !p)}
@@ -204,37 +276,36 @@ const MessageInput = () => {
               </button>
 
               {showAttachmentMenu && (
-                <div
-                  className="absolute bottom-16 left-2 z-[999] bg-[#121827] text-white rounded-xl shadow-xl p-3 space-y-2 w-40 border border-white/30"
-                >
+                <div className="absolute bottom-16 left-2 z-[999] bg-[#121827] text-white rounded-xl shadow-xl p-3 space-y-2 w-40 border border-white/30">
+                  
                   <button
                     onClick={() => fileInputRef.current.click()}
-                    className="flex items-center gap-3 w-full p-2 rounded-md transition-all hover:bg-white/10 hover:translate-x-[3px]"
+                    className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10 hover:translate-x-[3px]"
                   >
-                    <span className="w-8 flex justify-start items-center"><MdImage size={24} /></span>
+                    <span className="w-8"><MdImage size={24} /></span>
                     Image
                   </button>
 
                   <button
                     onClick={() => docInputRef.current.click()}
-                    className="flex items-center gap-3 w-full p-2 rounded-md transition-all hover:bg-white/10 hover:translate-x-[3px]"
+                    className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10 hover:translate-x-[3px]"
                   >
-                    <span className="w-8 flex justify-start items-center"><HiDocumentText size={24} /></span>
+                    <span className="w-8"><HiDocumentText size={24} /></span>
                     Document
                   </button>
 
                   <button
                     onClick={() => videoInputRef.current.click()}
-                    className="flex items-center gap-3 w-full p-2 rounded-md transition-all hover:bg-white/10 hover:translate-x-[3px]"
+                    className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10 hover:translate-x-[3px]"
                   >
-                    <span className="w-8 flex justify-start items-center ml-1"><FaVideo size={20} /></span>
+                    <span className="w-8"><FaVideo size={20} /></span>
                     Video
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Emoji */}
+            {/* EMOJI PICKER */}
             <div ref={pickerRef} className="relative flex items-center">
               <button
                 onClick={() => setShowPicker((p) => !p)}
@@ -242,14 +313,19 @@ const MessageInput = () => {
               >
                 <BsEmojiSmile size={24} />
               </button>
+
               {showPicker && (
                 <div className="absolute bottom-16 left-0 z-[999]">
-                  <Picker data={data} theme="dark" onEmojiSelect={(e) => setText((t) => t + e.native)} />
+                  <Picker
+                    data={data}
+                    theme="dark"
+                    onEmojiSelect={(e) => setText((t) => t + e.native)}
+                  />
                 </div>
               )}
             </div>
 
-            {/* Input */}
+            {/* TEXT INPUT */}
             <input
               type="text"
               placeholder="Type a message..."
@@ -259,12 +335,12 @@ const MessageInput = () => {
             />
           </div>
 
-          {/* Hidden Pickers */}
+          {/* HIDDEN INPUTS */}
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImagePick} />
           <input type="file" ref={docInputRef} className="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" onChange={handleDocumentPick} />
           <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoPick} />
 
-          {/* Send/Mic */}
+          {/* SEND BUTTON */}
           {text || image ? (
             <button
               onClick={handleSendMessage}

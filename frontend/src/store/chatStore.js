@@ -11,7 +11,7 @@ export const chatStore = create((set, get) => ({
   selectedUser: null,
   loadingMessages: false,
 
-  // 📌 Load sidebar users
+  // Load sidebar users
   getUsers: async () => {
     try {
       const res = await axiosInstance.get("/message/users");
@@ -21,7 +21,7 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // 📌 Load chat messages
+  // Load chat messages
   getMessages: async () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
@@ -36,14 +36,14 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // 📩 SEND MESSAGE (auto handles JSON + FormData)
+  // SEND MESSAGE — handles video, audio, docs, images, base64 images, text
   sendMessage: async (data) => {
     const { selectedUser, messages } = get();
     if (!selectedUser) return;
 
     const loggedUser = authStore.getState().loggedUser;
 
-    // Optimistic temp preview
+    // Create optimistic temp message
     const tmpId = uuid();
     const temp = {
       _id: tmpId,
@@ -65,35 +65,43 @@ export const chatStore = create((set, get) => ({
     try {
       let res;
 
-      // 🔥 If contains file → use FormData
+      // If file exists → MUST use FormData
       if (data.file instanceof File) {
         const form = new FormData();
         form.append("file", data.file);
         form.append("text", data.text || "");
+        form.append("caption", data.caption || "");
         form.append("image", data.image || "");
         form.append("audio", data.audio || "");
-        form.append("caption", data.caption || "");
 
-        res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        // 🔥 JSON request for text / image base64 / audio
-        res = await axiosInstance.post(`/message/sendmessage/${selectedUser._id}`, data);
+        res = await axiosInstance.post(
+          `/message/sendmessage/${selectedUser._id}`,
+          form,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      } 
+      
+      else {
+        // Text-only / base64 image / audio-only
+        res = await axiosInstance.post(
+          `/message/sendmessage/${selectedUser._id}`,
+          data
+        );
       }
 
-      // Replace pending temp message with real message
+      // Replace temp with actual message from backend
       set({
         messages: get().messages.map((m) => (m._id === tmpId ? res.data : m)),
       });
+
     } catch (err) {
-      console.log(err);
+      console.log("SEND ERROR:", err);
       set({ messages: get().messages.filter((m) => m._id !== tmpId) });
       toast.error("Failed to send message.");
     }
   },
 
-  // 📌 Select chat
+  // Select chat
   setSelectedUser: (user) => {
     if (!user) return set({ selectedUser: null, messages: [] });
 
@@ -119,7 +127,7 @@ export const chatStore = create((set, get) => ({
       });
   },
 
-  // 🔔 socket listener
+  // Socket listener
   listenForNewMessage: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
@@ -128,14 +136,14 @@ export const chatStore = create((set, get) => ({
       const { messages, selectedUser, users } = get();
       const loggedUser = authStore.getState().loggedUser;
 
-      const matchPending = messages.some(
+      const isPendingMatch = messages.some(
         (m) =>
           m.pending &&
           m.senderId === newMessage.senderId &&
           m.receiverId === newMessage.receiverId
       );
 
-      if (matchPending) {
+      if (isPendingMatch) {
         set({
           messages: messages.map((m) =>
             m.pending &&
@@ -166,12 +174,14 @@ export const chatStore = create((set, get) => ({
           ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
           : u
       );
+
       set({ users: updated });
     });
 
     socket.on("messagesSeen", (viewerId) => {
       const loggedUser = authStore.getState().loggedUser;
       const { selectedUser, messages } = get();
+
       if (selectedUser && viewerId === selectedUser._id) {
         set({
           messages: messages.map((m) =>

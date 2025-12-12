@@ -38,7 +38,7 @@ const Sidebar = () => {
               key={user._id}
               onClick={() => setSelectedUser({ ...user })}
               className={`
-                w-full flex items-center justify-between px-4 py-3 rounded-2xl
+                w-full flex items-center justify-between px-4 py-3 rounded-xl
                 transition-all duration-200 group
                 border 
                 ${
@@ -58,7 +58,7 @@ const Sidebar = () => {
                     alt="profile"
                     className="
                       size-12 rounded-full object-cover
-                      ring-2 ring-white/10 group-hover:ring-white/40
+                      ring-2 ring-white/10 group-hover:ring-white/35
                       transition-all duration-200
                     "
                   />
