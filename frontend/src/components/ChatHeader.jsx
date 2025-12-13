@@ -21,10 +21,10 @@ const ChatHeader = () => {
         />
 
         <div>
-          <h2 className="text-lg lg:text-xl font-semibold truncate">
+          <h2 className="text-base lg:text-xl font-semibold truncate">
             {selectedUser.username}
           </h2>
-          <p className="text-sm lg:text-base text-base-content/60">
+          <p className={`text-xs ${onlineUsers.includes(selectedUser._id) ? "text-gray-200" : "text-gray-300"}`}>
             {onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
           </p>
         </div>

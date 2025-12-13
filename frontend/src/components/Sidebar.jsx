@@ -12,9 +12,10 @@ const Sidebar = () => {
   }, [loggedUser, getUsers]);
 
   return (
+    // Base Container: Original dark gradient theme
     <aside className="h-full w-96 flex flex-col bg-gradient-to-b from-[#0d1a2b] to-[#0a1623] border-r border-[#1c2a3b] shadow-xl">
 
-      {/* Header */}
+      {/* Header (UNCHANGED) */}
       <div className="w-full p-5 bg-[#122033]/70 backdrop-blur-md border-b border-[#1c2a3b] shadow-md">
         <div className="flex items-center gap-3">
           <FaUserCircle className="size-7 text-gray-200" />
@@ -24,64 +25,68 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Contacts */}
-      <div className="overflow-y-auto w-full p-4 space-y-3">
+      {/* Contacts List - Monochromatic UI (with final font size adjustment) */}
+      <div className="overflow-y-auto w-full p-4 space-y-2">
         {users.length === 0 && (
           <div className="text-center text-gray-400 py-10">No contacts found.</div>
         )}
 
         {users.map((user) => {
           const isSelected = selectedUser?._id === user._id;
+          const isOnline = onlineUsers.includes(user._id);
 
           return (
             <button
               key={user._id}
               onClick={() => setSelectedUser({ ...user })}
               className={`
-                w-full flex items-center justify-between px-4 py-3 rounded-xl
-                transition-all duration-200 group
-                border 
+                w-full flex items-center justify-between px-4 py-2.5 rounded-xl 
+                transition-all duration-300 group
+                border-2 border-transparent 
                 ${
                   isSelected
-                    ? "border-white bg-[#1c2b3d] shadow-lg"   /* WHITE BORDER ON SELECT */
-                    : "border-white/10 bg-[#152233] hover:border-white/40 hover:bg-[#1d2d44] hover:shadow-md"
+                    ? "bg-[#25374d] ring-2 ring-white/70 shadow-inner"   /* SELECTED: Lighter BG with soft white inner ring/shadow */
+                    : "bg-[#182638] hover:bg-[#1f3044] hover:border-gray-600"
                 }
               `}
             >
               {/* Left side */}
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <img
                     src={user.profilepic?.trim() ? user.profilepic : "/avatar.avif"}
                     alt="profile"
-                    className="
-                      size-12 rounded-full object-cover
-                      ring-2 ring-white/10 group-hover:ring-white/35
-                      transition-all duration-200
-                    "
+                    className={`
+                      size-11 rounded-full object-cover
+                      ring-1 ${isOnline ? "ring-white/50" : "ring-gray-700"} /* Soft white ring for online */
+                      transition-all duration-300
+                    `}
                   />
 
-                  {onlineUsers.includes(user._id) && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#152233] rounded-full shadow" />
-                  )}
+                  {/* Status Indicator Dot (Subtle White for Online) */}
+                  <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#182638] rounded-full shadow ${
+                    isOnline 
+                    ? "bg-gray-200" // Soft white/light gray dot
+                    : "bg-gray-600" // Darker gray for offline
+                  }`} />
                 </div>
 
                 {/* Name + status */}
-                <div className="hidden lg:flex flex-col min-w-0">
-                  <span className="font-semibold text-gray-100 truncate text-[15px]">
-                    {user.username}
+                <div className="hidden lg:flex flex-col min-w-0 text-left">
+                  <span className={`font-medium text-base truncate ${isSelected ? "text-white" : "text-gray-100"}`}>
+                    {user.username} {/* FONT SIZE INCREASED HERE: text-base */}
                   </span>
-                  <span className="text-xs text-gray-400 truncate">
-                    {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                  <span className={`text-xs truncate ${isOnline ? "text-gray-400" : "text-gray-500"}`}>
+                    {isOnline ? "Online" : "Offline"}
                   </span>
                 </div>
               </div>
 
               {/* Unread Count */}
               {user.unreadCount > 0 && (
-                <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0">
                   {user.unreadCount}
                 </span>
               )}
