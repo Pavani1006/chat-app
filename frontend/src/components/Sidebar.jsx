@@ -66,11 +66,22 @@ const Sidebar = () => {
                   />
 
                   {/* Status Indicator Dot (Subtle White for Online) */}
-                  <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#182638] rounded-full shadow ${
-                    isOnline 
-                    ? "bg-gray-200" // Soft white/light gray dot
-                    : "bg-gray-600" // Darker gray for offline
-                  }`} />
+                  {/* Status Indicator (✓ / ✕) */}
+<span
+  className={`absolute bottom-0 right-0 w-4 h-4 flex items-center justify-center 
+    rounded-full border-2 border-[#182638] shadow
+    ${isOnline ? "bg-gray-200" : "bg-gray-600"}
+  `}
+>
+  <span
+    className={`text-[9px] font-bold leading-none ${
+      isOnline ? "text-[#182638]" : "text-gray-300"
+    }`}
+  >
+    {isOnline ? "✓" : "✕"}
+  </span>
+</span>
+
                 </div>
 
                 {/* Name + status */}
@@ -86,10 +97,20 @@ const Sidebar = () => {
 
               {/* Unread Count */}
               {user.unreadCount > 0 && (
-                <span className="bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0">
-                  {user.unreadCount}
-                </span>
-              )}
+  <span
+    className="
+      flex-shrink-0 min-w-[20px] h-[20px]
+      px-1.5 flex items-center justify-center
+      rounded-full text-[11px] font-semibold
+      text-white
+      bg-gradient-to-br from-indigo-500 to-purple-600
+      shadow-[0_0_8px_rgba(99,102,241,0.35)]
+    "
+  >
+    {user.unreadCount}
+  </span>
+)}
+
             </button>
           );
         })}
