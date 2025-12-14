@@ -78,7 +78,7 @@ const Sidebar = () => {
                   <span className={`font-medium text-base truncate ${isSelected ? "text-white" : "text-gray-100"}`}>
                     {user.username} {/* FONT SIZE INCREASED HERE: text-base */}
                   </span>
-                  <span className={`text-xs truncate ${isOnline ? "text-gray-400" : "text-gray-500"}`}>
+                  <span className={`text-xs truncate ${isOnline ? "text-gray-400" : "text-gray-400"}`}>
                     {isOnline ? "Online" : "Offline"}
                   </span>
                 </div>

@@ -22,13 +22,14 @@ const Messages = () => {
     if (selectedUser) getMessages();
   }, [selectedUser, getMessages]);
 
-  useEffect(() => {
-    listenForNewMessage();
-    return () => stopListeningForNewMessage();
-  }, []);
+useEffect(() => {
+  listenForNewMessage();
+  return () => stopListeningForMessages();
+}, [listenForNewMessage, stopListeningForMessages]);
+
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth",block:"end" });
   }, [messages]);
 
   const formatDate = (dateString) => {
@@ -119,7 +120,7 @@ const Messages = () => {
 
                   {/* CAPTION */}
                   {msg.caption && msg.image && (
-                    <p className="text-sm mt-2 break-words">{msg.caption}</p>
+                    <p className="text-base mt-2 break-words">{msg.caption}</p>
                   )}
 
                   {/* AUDIO */}
@@ -131,7 +132,7 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* DOCUMENT PREVIEW (SMALL & CLEAN) */}
+                  {/* DOCUMENT PREVIEW (baseALL & CLEAN) */}
                   {msg.fileUrl && (
                     <div
                       onClick={() => window.open(msg.fileUrl, "_blank")}
@@ -142,7 +143,7 @@ const Messages = () => {
                       </div>
 
                       <div className="flex flex-col overflow-hidden">
-                        <span className="font-medium text-sm text-[#1C1F23] truncate">
+                        <span className="font-medium text-base text-[#1C1F23] truncate">
                           {msg.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">Tap to view / download</span>
@@ -151,7 +152,7 @@ const Messages = () => {
                   )}
 
                   {/* TEXT */}
-                  {msg.text && <p className="text-sm break-words">{msg.text}</p>}
+                  {msg.text && <p className="text-base break-words">{msg.text}</p>}
 
                   {/* TIME + SEEN */}
                   <div className="flex justify-end gap-1 mt-1">
@@ -187,7 +188,7 @@ const Messages = () => {
 
                   {/* CAPTION */}
                   {msg.caption && msg.image && (
-                    <p className="text-sm mt-2 break-words">{msg.caption}</p>
+                    <p className="text-base mt-2 break-words">{msg.caption}</p>
                   )}
 
                   {/* AUDIO */}
@@ -199,7 +200,7 @@ const Messages = () => {
                     />
                   )}
 
-                  {/* DOCUMENT FIXED SMALL */}
+                  {/* DOCUMENT FIXED baseALL */}
                   {msg.fileUrl && (
                     <div
                       onClick={() => window.open(msg.fileUrl, "_blank")}
@@ -210,7 +211,7 @@ const Messages = () => {
                       </div>
 
                       <div className="flex flex-col overflow-hidden">
-                        <span className="font-medium text-sm truncate">
+                        <span className="font-medium text-base truncate">
                           {msg.fileName || "Document"}
                         </span>
                         <span className="text-[11px] text-[#5A6270]">
@@ -221,7 +222,7 @@ const Messages = () => {
                   )}
 
                   {/* TEXT */}
-                  {msg.text && <p className="text-sm break-words">{msg.text}</p>}
+                  {msg.text && <p className="text-base break-words">{msg.text}</p>}
 
                   {/* TIME */}
                   <span className="text-[10px] text-gray-500 opacity-70 mt-1 block text-right">

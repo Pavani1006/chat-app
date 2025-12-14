@@ -5,7 +5,7 @@ import { RxCross2 } from "react-icons/rx";   // ⬅ X icon
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = chatStore();
   const { onlineUsers } = authStore();
-
+if (!selectedUser) return null;
   return (
     <div className="flex items-center justify-between px-3 py-2 bg-base-200 shadow-lg rounded-md lg:rounded-none w-full bg-gray-800">
       <div className="flex items-center gap-3 relative">
@@ -36,7 +36,7 @@ const ChatHeader = () => {
         className="p-2 lg:p-3 rounded-full hover:bg-base-300 transition"
         title="Close chat"
       >
-        <RxCross2 className="text-white text-2xl lg:text-3xl" />
+        <RxCross2 className="text-white text-2xl lg:text-2xl" />
       </button>
     </div>
   );
