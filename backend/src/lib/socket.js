@@ -26,6 +26,25 @@ io.on("connection", (socket) => {
     userSocket[userId] = socket.id;
   }
   io.emit("getOnlineUsers", Object.keys(userSocket));
+  // 🔵 USER IS TYPING
+  socket.on("typing", (receiverId) => {
+    const receiverSocketId = userSocket[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("typing", {
+        senderId: userId,
+      });
+    }
+  });
+
+  // 🔵 USER STOPPED TYPING
+  socket.on("stopTyping", (receiverId) => {
+    const receiverSocketId = userSocket[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("stopTyping", {
+        senderId: userId,
+      });
+    }
+  });
 
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);

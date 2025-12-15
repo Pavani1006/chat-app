@@ -9,9 +9,10 @@ export const chatStore = create((set, get) => ({
   users: [],
   messages: [],
   selectedUser: null,
+  typingUserId: null,
   loadingMessages: false,
 
-  // Load sidebar users
+  /* -------------------- USERS -------------------- */
   getUsers: async () => {
     try {
       const res = await axiosInstance.get("/message/users");
@@ -21,14 +22,16 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // Load chat messages
+  /* -------------------- MESSAGES -------------------- */
   getMessages: async () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
 
     set({ loadingMessages: true });
     try {
-      const res = await axiosInstance.get(`/message/getmessages/${selectedUser._id}`);
+      const res = await axiosInstance.get(
+        `/message/getmessages/${selectedUser._id}`
+      );
       set({ messages: res.data, loadingMessages: false });
     } catch {
       set({ loadingMessages: false });
@@ -36,16 +39,15 @@ export const chatStore = create((set, get) => ({
     }
   },
 
-  // SEND MESSAGE — handles video, audio, docs, images, base64 images, text
+  /* -------------------- SEND MESSAGE -------------------- */
   sendMessage: async (data) => {
     const { selectedUser, messages } = get();
     if (!selectedUser) return;
 
     const loggedUser = authStore.getState().loggedUser;
 
-    // Create optimistic temp message
     const tmpId = uuid();
-    const temp = {
+    const tempMessage = {
       _id: tmpId,
       senderId: loggedUser._id,
       receiverId: selectedUser._id,
@@ -60,12 +62,11 @@ export const chatStore = create((set, get) => ({
       createdAt: new Date().toISOString(),
     };
 
-    set({ messages: [...messages, temp] });
+    set({ messages: [...messages, tempMessage] });
 
     try {
       let res;
 
-      // If file exists → MUST use FormData
       if (data.file instanceof File) {
         const form = new FormData();
         form.append("file", data.file);
@@ -79,31 +80,33 @@ export const chatStore = create((set, get) => ({
           form,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-      } 
-      
-      else {
-        // Text-only / base64 image / audio-only
+      } else {
         res = await axiosInstance.post(
           `/message/sendmessage/${selectedUser._id}`,
           data
         );
       }
 
-      // Replace temp with actual message from backend
       set({
-        messages: get().messages.map((m) => (m._id === tmpId ? res.data : m)),
+        messages: get().messages.map((m) =>
+          m._id === tmpId ? res.data : m
+        ),
       });
-
     } catch (err) {
-      console.log("SEND ERROR:", err);
-      set({ messages: get().messages.filter((m) => m._id !== tmpId) });
+      console.error(err);
+      set({
+        messages: get().messages.filter((m) => m._id !== tmpId),
+      });
       toast.error("Failed to send message.");
     }
   },
 
-  // Select chat
+  /* -------------------- SELECT CHAT -------------------- */
   setSelectedUser: (user) => {
-    if (!user) return set({ selectedUser: null, messages: [] });
+    if (!user) {
+      set({ selectedUser: null, messages: [] });
+      return;
+    }
 
     const loggedUser = authStore.getState().loggedUser;
     const socket = authStore.getState().socket;
@@ -111,23 +114,22 @@ export const chatStore = create((set, get) => ({
     set((state) => ({
       selectedUser: user,
       messages: [],
+      typingUserId: null,
       users: state.users.map((u) =>
         u._id === user._id ? { ...u, unreadCount: 0 } : u
       ),
     }));
 
-    get()
-      .getMessages()
-      .then(() => {
-        axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
-        socket?.emit("markSeen", {
-          userId: loggedUser._id,
-          chatUserId: user._id,
-        });
+    get().getMessages().then(() => {
+      axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
+      socket?.emit("markSeen", {
+        userId: loggedUser._id,
+        chatUserId: user._id,
       });
+    });
   },
 
-  // Socket listener
+  /* -------------------- SOCKET: MESSAGES -------------------- */
   listenForNewMessage: () => {
     const socket = authStore.getState().socket;
     if (!socket) return;
@@ -135,26 +137,6 @@ export const chatStore = create((set, get) => ({
     socket.on("newMessage", (newMessage) => {
       const { messages, selectedUser, users } = get();
       const loggedUser = authStore.getState().loggedUser;
-
-      const isPendingMatch = messages.some(
-        (m) =>
-          m.pending &&
-          m.senderId === newMessage.senderId &&
-          m.receiverId === newMessage.receiverId
-      );
-
-      if (isPendingMatch) {
-        set({
-          messages: messages.map((m) =>
-            m.pending &&
-            m.senderId === newMessage.senderId &&
-            m.receiverId === newMessage.receiverId
-              ? newMessage
-              : m
-          ),
-        });
-        return;
-      }
 
       const isChatOpen =
         selectedUser &&
@@ -169,13 +151,13 @@ export const chatStore = create((set, get) => ({
         return;
       }
 
-      const updated = users.map((u) =>
+      const updatedUsers = users.map((u) =>
         u._id === newMessage.senderId
           ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
           : u
       );
 
-      set({ users: updated });
+      set({ users: updatedUsers });
     });
 
     socket.on("messagesSeen", (viewerId) => {
@@ -202,5 +184,29 @@ export const chatStore = create((set, get) => ({
     if (!socket) return;
     socket.off("newMessage");
     socket.off("messagesSeen");
+  },
+
+  /* -------------------- SOCKET: TYPING -------------------- */
+  listenForTyping: () => {
+    const socket = authStore.getState().socket;
+    if (!socket) return;
+
+    socket.on("typing", ({ senderId }) => {
+      set({ typingUserId: senderId });
+    });
+
+    socket.on("stopTyping", ({ senderId }) => {
+      const { typingUserId } = get();
+      if (typingUserId === senderId) {
+        set({ typingUserId: null });
+      }
+    });
+  },
+
+  stopListeningForTyping: () => {
+    const socket = authStore.getState().socket;
+    if (!socket) return;
+    socket.off("typing");
+    socket.off("stopTyping");
   },
 }));

@@ -10,9 +10,11 @@ import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import { IoTrashBin } from "react-icons/io5";
 import { FiPlus } from "react-icons/fi";
+import { authStore } from "../store/authStore";
 
 const MessageInput = () => {
   const { sendMessage, selectedUser } = chatStore();
+  const socket = authStore.getState().socket;
 
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
@@ -23,6 +25,7 @@ const MessageInput = () => {
   const [paused, setPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
 
+  const typingTimeoutRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
@@ -33,7 +36,7 @@ const MessageInput = () => {
   const docInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const timerRef = useRef(null);
-
+  const inputRef = useRef(null);
   const pickerRef = useRef(null);
   const attachmentRef = useRef(null);
 
@@ -47,8 +50,9 @@ const MessageInput = () => {
         setShowAttachmentMenu(false);
       }
     };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+   document.addEventListener("click", handleOutside);
+return () => document.removeEventListener("click", handleOutside);
+
   }, []);
 
   useEffect(() => {
@@ -56,6 +60,10 @@ const MessageInput = () => {
     setImage(null);
     setShowAttachmentMenu(false);
   }, [selectedUser]);
+
+  useEffect(() => {
+  socket?.emit("stopTyping", selectedUser?._id);
+}, [selectedUser]);
 
   /* -------------------- ENTER TO SEND -------------------- */
   const handleKeyDown = (e) => {
@@ -169,7 +177,7 @@ const MessageInput = () => {
   /* -------------------- SEND TEXT / IMAGE -------------------- */
   const handleSendMessage = () => {
     if (!text.trim() && !image) return;
-
+    socket?.emit("stopTyping", selectedUser._id);
     sendMessage({
       text: image ? "" : text.trim(),
       image: image || "",
@@ -332,13 +340,42 @@ const MessageInput = () => {
         <div className="flex items-center gap-2 p-2 w-full max-w-[98%] mx-auto relative">
           <div className="flex flex-1 items-center bg-slate-700 rounded-2xl px-3 py-2 shadow-inner">
             <div ref={attachmentRef} className="relative flex items-center">
-              <button
-                onClick={() => setShowAttachmentMenu((p) => !p)}
-                className="text-2xl mr-1 text-white p-1 hover:bg-white/10 rounded-full"
-              >
-                <FiPlus />
-              </button>
-            </div>
+  <button
+    onClick={() => setShowAttachmentMenu((p) => !p)}
+    className="text-2xl mr-1 text-white p-1 hover:bg-white/10 rounded-full"
+  >
+    <FiPlus />
+  </button>
+
+  {showAttachmentMenu && (
+    <div className="absolute bottom-14 left-0 z-[999] bg-[#121827] text-white rounded-xl shadow-xl p-3 space-y-2 w-40 border border-white/20">
+      
+      <button
+        onClick={() => fileInputRef.current.click()}
+        className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10"
+      >
+        <MdImage size={22} /> Image
+      </button>
+
+      <button
+        onClick={() => docInputRef.current.click()}
+        className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10"
+      >
+        <HiDocumentText size={22} /> Document
+      </button>
+
+      <button
+        onClick={() => videoInputRef.current.click()}
+        className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-white/10"
+      >
+        <FaVideo size={20} className="ml-1" /> Video
+      </button>
+
+    </div>
+  )}
+</div>
+
+
 
             <div ref={pickerRef} className="relative flex items-center">
               <button
@@ -348,15 +385,49 @@ const MessageInput = () => {
                 <BsEmojiSmile size={20} />
               </button>
             </div>
+            {showPicker && (
+  <div className="absolute bottom-14 left-0 z-[999]">
+    <Picker
+  data={data}
+  theme="dark"
+  onEmojiSelect={(e) => {
+    setText((t) => t + e.native);
+    setShowPicker(false);            // close emoji picker
+    setTimeout(() => {
+      inputRef.current?.focus();     // focus input again
+    }, 0);
+  }}
+/>
+
+  </div>
+)}
+
 
             <input
-              type="text"
-              placeholder="Type a message..."
-              className="flex-1 px-2 bg-transparent text-white outline-none text-base"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
+  ref={inputRef}
+  type="text"
+  placeholder="Type a message..."
+  className="flex-1 px-2 bg-transparent text-white outline-none text-base"
+  value={text}
+  onChange={(e) => {
+  setText(e.target.value);
+
+  if (!socket || !selectedUser) return;
+
+  socket.emit("typing", selectedUser._id);
+
+  if (typingTimeoutRef.current) {
+    clearTimeout(typingTimeoutRef.current);
+  }
+
+  typingTimeoutRef.current = setTimeout(() => {
+    socket.emit("stopTyping", selectedUser._id);
+  }, 1000);
+}}
+
+  onKeyDown={handleKeyDown}
+/>
+
           </div>
 
           {text || image ? (
@@ -374,6 +445,31 @@ const MessageInput = () => {
               <FaMicrophone className="text-xl" />
             </button>
           )}
+          {/* HIDDEN FILE INPUTS — ADD HERE */}
+<input
+  type="file"
+  ref={fileInputRef}
+  accept="image/*"
+  className="hidden"
+  onChange={handleImagePick}
+/>
+
+<input
+  type="file"
+  ref={docInputRef}
+  accept=".pdf,.doc,.docx,.ppt,.pptx"
+  className="hidden"
+  onChange={handleDocumentPick}
+/>
+
+<input
+  type="file"
+  ref={videoInputRef}
+  accept="video/*"
+  className="hidden"
+  onChange={handleVideoPick}
+/>
+
         </div>
       </div>
     </>

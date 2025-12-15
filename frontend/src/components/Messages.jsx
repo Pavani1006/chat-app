@@ -22,10 +22,10 @@ const Messages = () => {
     if (selectedUser) getMessages();
   }, [selectedUser, getMessages]);
 
-useEffect(() => {
-  listenForNewMessage();
-  return () => stopListeningForMessages();
-}, [listenForNewMessage, stopListeningForMessages]);
+// useEffect(() => {
+//   listenForNewMessage();
+//   return () => stopListeningForMessages();
+// }, [listenForNewMessage, stopListeningForMessages]);
 
 
   useEffect(() => {
