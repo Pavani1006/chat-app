@@ -55,7 +55,7 @@ export const sendMessage = async (req, res) => {
     const senderId = req.user._id;
     const receiverId = req.params._id;
 
-    let { text = "", caption = "", audio = "", image = "" } = req.body;
+    let { text = "", caption = "", audio = "", image = "" , audioDuration = 0} = req.body;
 
     let fileUrl = "";
     let fileName = "";
@@ -83,7 +83,8 @@ export const sendMessage = async (req, res) => {
       text,
       caption,
       image,
-      audio,      // 🔥 voice stored correctly
+      audio,  
+      audioDuration,     // 🔥 voice stored correctly
       fileUrl,    // 🔥 for documents
       fileName,
       fileType,

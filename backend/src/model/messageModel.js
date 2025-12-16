@@ -22,6 +22,9 @@ const messageSchema = new mongoose.Schema(
 
     // 🎤 Audio message
     audio: { type: String, default: "" },
+    
+audioDuration: { type: Number, default: 0 },
+
 
     // 📄 File message (PDF/docs)
     fileUrl: { type: String, default: "" }, // localhost URL

@@ -54,6 +54,7 @@ export const chatStore = create((set, get) => ({
       text: data.text || "",
       image: data.image || "",
       audio: data.audio || "",
+      audioDuration: data.audioDuration || 0,
       caption: data.caption || "",
       fileName: data.file?.name || "",
       fileUrl: data.file ? "uploading..." : "",
@@ -74,6 +75,8 @@ export const chatStore = create((set, get) => ({
         form.append("caption", data.caption || "");
         form.append("image", data.image || "");
         form.append("audio", data.audio || "");
+        form.append("audioDuration", data.audioDuration || 0);
+
 
         res = await axiosInstance.post(
           `/message/sendmessage/${selectedUser._id}`,

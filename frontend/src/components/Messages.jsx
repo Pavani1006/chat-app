@@ -18,9 +18,12 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null);
 
-  useEffect(() => {
-    if (selectedUser) getMessages();
-  }, [selectedUser, getMessages]);
+  const formatDuration = (seconds = 0) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
 
 // useEffect(() => {
 //   listenForNewMessage();
@@ -28,9 +31,21 @@ const Messages = () => {
 // }, [listenForNewMessage, stopListeningForMessages]);
 
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth",block:"end" });
-  }, [messages]);
+
+useEffect(() => {
+  if (selectedUser) getMessages();
+}, [selectedUser, getMessages]);
+
+useEffect(() => {
+  if (!selectedUser) return;
+  messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+}, [selectedUser]);
+
+useEffect(() => {
+  messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+}, [messages]);
+
+
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -125,12 +140,21 @@ const Messages = () => {
 
                   {/* AUDIO */}
                   {msg.audio && (
-                    <audio
-                      controls
-                      className="mt-3 w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
-                      src={msg.audio}
-                    />
-                  )}
+  <div className="mt-3">
+    <audio
+      controls
+      className="w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
+      src={msg.audio}
+    />
+
+    {msg.audioDuration > 0 && (
+      <p className="text-[10px] text-gray-500 mt-1 text-right">
+        {formatDuration(msg.audioDuration)}
+      </p>
+    )}
+  </div>
+)}
+
 
                   {/* DOCUMENT PREVIEW (baseALL & CLEAN) */}
                   {msg.fileUrl && (
@@ -193,12 +217,21 @@ const Messages = () => {
 
                   {/* AUDIO */}
                   {msg.audio && (
-                    <audio
-                      controls
-                      className="mt-3 w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
-                      src={msg.audio}
-                    />
-                  )}
+  <div className="mt-3">
+    <audio
+      controls
+      className="w-[230px] rounded-xl bg-gray-100 p-2 shadow-md"
+      src={msg.audio}
+    />
+
+    {msg.audioDuration > 0 && (
+      <p className="text-[10px] text-gray-500 mt-1 text-right">
+        {formatDuration(msg.audioDuration)}
+      </p>
+    )}
+  </div>
+)}
+
 
                   {/* DOCUMENT FIXED baseALL */}
                   {msg.fileUrl && (

@@ -128,6 +128,7 @@ return () => document.removeEventListener("click", handleOutside);
           caption: "",
           image: "",
           audio: "",
+          audioDuration: recordingTime,
         });
       };
 
