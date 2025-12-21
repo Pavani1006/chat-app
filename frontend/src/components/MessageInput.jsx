@@ -202,21 +202,28 @@ return () => document.removeEventListener("click", handleOutside);
   };
 
   /* -------------------- DOCUMENT PICK -------------------- */
-  const handleDocumentPick = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  /* -------------------- DOCUMENT PICK -------------------- */
+const handleDocumentPick = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    sendMessage({
-      file,
-      text: "",
-      caption: file.name,
-      image: "",
-      audio: "",
-    });
+  // We send the file, but we also pass the filename explicitly 
+  // so the bubble isn't empty while uploading
+  sendMessage({
+    file,
+    text: "",
+    fileName: file.name, // Ensure your sendMessage function handles this
+    fileUrl: "uploading...", // This acts as a flag for the UI
+    image: "",
+    audio: "",
+  });
 
-    toast.success("Document sending...");
-    setShowAttachmentMenu(false);
-  };
+  toast.success("Sending document...");
+  setShowAttachmentMenu(false);
+  
+  // Clear the input so you can upload the same file again if needed
+  e.target.value = null; 
+};
 
   /* -------------------- VIDEO PICK -------------------- */
   const handleVideoPick = (e) => {

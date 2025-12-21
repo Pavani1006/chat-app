@@ -23,19 +23,20 @@ export const chatStore = create((set, get) => ({
   },
 
   /* -------------------- MESSAGES -------------------- */
+ /* -------------------- MESSAGES -------------------- */
   getMessages: async () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
 
     set({ loadingMessages: true });
     try {
-      const res = await axiosInstance.get(
-        `/message/getmessages/${selectedUser._id}`
-      );
-      set({ messages: res.data, loadingMessages: false });
-    } catch {
-      set({ loadingMessages: false });
+      const res = await axiosInstance.get(`/message/getmessages/${selectedUser._id}`);
+      set({ messages: res.data });
+    } catch (error) {
       toast.error("Failed to fetch messages.");
+    } finally {
+      // This "finally" block ensures loading stops no matter what
+      set({ loadingMessages: false });
     }
   },
 

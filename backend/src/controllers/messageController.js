@@ -1,77 +1,222 @@
+// import Users from "../model/userModel.js";
+// import Messages from "../model/messageModel.js";
+// import { getReceiverSocketId, io } from "../lib/socket.js";
+
+// // 📌 Sidebar Users
+// export const contactsForSidebar = async (req, res) => {
+//   try {
+//     const loggedUserId = req.user._id;
+
+//     const users = await Users.find({ _id: { $ne: loggedUserId } }).select("-password");
+
+//     const messages = await Messages.find({
+//       receiverId: loggedUserId,
+//       seenBy: { $ne: loggedUserId },
+//     });
+
+//     const unreadCounts = {};
+//     messages.forEach((msg) => {
+//       unreadCounts[msg.senderId] = (unreadCounts[msg.senderId] || 0) + 1;
+//     });
+
+//     const updated = users.map((u) => ({
+//       ...u._doc,
+//       unreadCount: unreadCounts[u._id] || 0,
+//     }));
+
+//     res.status(200).json(updated);
+//   } catch {
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
+// // 📌 Get Messages
+// export const getMessages = async (req, res) => {
+//   const receiverId = req.params._id;
+//   const senderId = req.user._id;
+
+//   try {
+//     const messages = await Messages.find({
+//       $or: [
+//         { senderId, receiverId },
+//         { senderId: receiverId, receiverId: senderId },
+//       ],
+//     }).sort({ createdAt: 1 });
+
+//     res.status(200).json(messages);
+//   } catch {
+//     res.status(400).json({ message: "Invalid user Id." });
+//   }
+// };
+
+// // 📩 Send Message (FULL FIXED)
+// export const sendMessage = async (req, res) => {
+//   try {
+//     const senderId = req.user._id;
+//     const receiverId = req.params._id;
+
+//     let { text = "", caption = "", audio = "", image = "" , audioDuration = 0} = req.body;
+
+//     let fileUrl = "";
+//     let fileName = "";
+//     let fileType = "";
+
+//     // 🔥 If multer uploaded a file
+//     if (req.file) {
+//       const base = process.env.BASE_URL || "http://localhost:5000";
+
+//       // 🎤 Voice message
+//       if (req.file.mimetype.startsWith("audio/")) {
+//         audio = `${base}/uploads/${req.file.filename}`;
+//       }
+//       // 📄 PDF / DOC / PPT / ZIP
+//       else {
+//         fileUrl = `${base}/uploads/${req.file.filename}`;
+//         fileName = req.file.originalname;
+//         fileType = req.file.mimetype;
+//       }
+//     }
+
+//     const newMessage = new Messages({
+//       senderId,
+//       receiverId,
+//       text,
+//       caption,
+//       image,
+//       audio,  
+//       audioDuration,     // 🔥 voice stored correctly
+//       fileUrl,    // 🔥 for documents
+//       fileName,
+//       fileType,
+//       seenBy: [senderId],
+//     });
+
+//     await newMessage.save();
+
+//     // 🔔 Realtime emit
+//     const receiverSocketId = getReceiverSocketId(receiverId);
+//     if (receiverSocketId) {
+//       io.to(receiverSocketId).emit("newMessage", newMessage);
+//     }
+
+//     return res.status(201).json(newMessage);
+//   } catch (error) {
+//     console.log("Send Message Error:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
+// // 👁️ Seen
+// export const markMessagesSeen = async (req, res) => {
+//   try {
+//     const viewerId = req.user._id;
+//     const chatUserId = req.params._id;
+
+//     const result = await Messages.updateMany(
+//       { senderId: chatUserId, receiverId: viewerId, seenBy: { $ne: viewerId } },
+//       { $addToSet: { seenBy: viewerId } }
+//     );
+
+//     if (result.modifiedCount > 0) {
+//       const socketId = getReceiverSocketId(chatUserId);
+//       if (socketId) io.to(socketId).emit("messagesSeen", viewerId);
+//     }
+
+//     res.status(200).json({ success: true });
+//   } catch {
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
+
+
 import Users from "../model/userModel.js";
 import Messages from "../model/messageModel.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 
-// 📌 Sidebar Users
+/* ===================== SIDEBAR USERS ===================== */
 export const contactsForSidebar = async (req, res) => {
   try {
     const loggedUserId = req.user._id;
 
-    const users = await Users.find({ _id: { $ne: loggedUserId } }).select("-password");
+    const users = await Users.find({ _id: { $ne: loggedUserId } })
+      .select("-password");
 
-    const messages = await Messages.find({
+    const unreadMessages = await Messages.find({
       receiverId: loggedUserId,
       seenBy: { $ne: loggedUserId },
     });
 
     const unreadCounts = {};
-    messages.forEach((msg) => {
-      unreadCounts[msg.senderId] = (unreadCounts[msg.senderId] || 0) + 1;
+    unreadMessages.forEach((msg) => {
+      unreadCounts[msg.senderId] =
+        (unreadCounts[msg.senderId] || 0) + 1;
     });
 
-    const updated = users.map((u) => ({
+    const updatedUsers = users.map((u) => ({
       ...u._doc,
       unreadCount: unreadCounts[u._id] || 0,
     }));
 
-    res.status(200).json(updated);
-  } catch {
+    res.status(200).json(updatedUsers);
+  } catch (err) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// 📌 Get Messages
+/* ===================== GET MESSAGES ===================== */
+/* ===================== GET MESSAGES ===================== */
 export const getMessages = async (req, res) => {
-  const receiverId = req.params._id;
-  const senderId = req.user._id;
-
   try {
+    // FIX: Check both 'id' and '_id' to be safe
+    const receiverId = req.params.id || req.params._id;
+    const senderId = req.user._id;
+
+    if (!receiverId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
     const messages = await Messages.find({
       $or: [
-        { senderId, receiverId },
+        { senderId: senderId, receiverId: receiverId },
         { senderId: receiverId, receiverId: senderId },
       ],
     }).sort({ createdAt: 1 });
 
+    // This log will tell you exactly what's happening in your terminal
+    console.log(`Fetching chat for: ${receiverId}. Found ${messages.length} messages.`);
+
     res.status(200).json(messages);
-  } catch {
-    res.status(400).json({ message: "Invalid user Id." });
+  } catch (error) {
+    console.error("Error in getMessages:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// 📩 Send Message (FULL FIXED)
+/* ===================== SEND MESSAGE (CLOUDINARY) ===================== */
+/* ===================== SEND MESSAGE (CLOUDINARY) ===================== */
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
     const receiverId = req.params._id;
 
-    let { text = "", caption = "", audio = "", image = "" , audioDuration = 0} = req.body;
+    let { text = "", caption = "", image = "", audio = "", audioDuration = 0 } = req.body;
 
     let fileUrl = "";
     let fileName = "";
     let fileType = "";
 
-    // 🔥 If multer uploaded a file
     if (req.file) {
-      const base = process.env.BASE_URL || "http://localhost:5000";
+      // req.file.path is the URL from Cloudinary
+      const cloudUrl = req.file.path; 
 
-      // 🎤 Voice message
       if (req.file.mimetype.startsWith("audio/")) {
-        audio = `${base}/uploads/${req.file.filename}`;
-      }
-      // 📄 PDF / DOC / PPT / ZIP
-      else {
-        fileUrl = `${base}/uploads/${req.file.filename}`;
+        audio = cloudUrl;
+      } else if (req.file.mimetype.startsWith("image/")) {
+        image = cloudUrl;
+      } else {
+        /* ✅ PDF FIX: Ensure the URL ends correctly and is served as a document */
+        fileUrl = cloudUrl;
         fileName = req.file.originalname;
         fileType = req.file.mimetype;
       }
@@ -83,9 +228,9 @@ export const sendMessage = async (req, res) => {
       text,
       caption,
       image,
-      audio,  
-      audioDuration,     // 🔥 voice stored correctly
-      fileUrl,    // 🔥 for documents
+      audio,
+      audioDuration,
+      fileUrl,
       fileName,
       fileType,
       seenBy: [senderId],
@@ -93,33 +238,38 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    // 🔔 Realtime emit
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
-    return res.status(201).json(newMessage);
+    res.status(201).json(newMessage);
   } catch (error) {
-    console.log("Send Message Error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Send Message Error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// 👁️ Seen
+/* ===================== MARK SEEN ===================== */
 export const markMessagesSeen = async (req, res) => {
   try {
     const viewerId = req.user._id;
     const chatUserId = req.params._id;
 
     const result = await Messages.updateMany(
-      { senderId: chatUserId, receiverId: viewerId, seenBy: { $ne: viewerId } },
+      {
+        senderId: chatUserId,
+        receiverId: viewerId,
+        seenBy: { $ne: viewerId },
+      },
       { $addToSet: { seenBy: viewerId } }
     );
 
     if (result.modifiedCount > 0) {
       const socketId = getReceiverSocketId(chatUserId);
-      if (socketId) io.to(socketId).emit("messagesSeen", viewerId);
+      if (socketId) {
+        io.to(socketId).emit("messagesSeen", viewerId);
+      }
     }
 
     res.status(200).json({ success: true });
