@@ -2,6 +2,7 @@ import { useState } from "react";
 import { authStore } from "../store/authStore";
 import imageCompression from "browser-image-compression";
 import { RxCross2 } from "react-icons/rx";
+import { FiEdit2 } from "react-icons/fi";
 
 const ProfilePage = () => {
   const { loggedUser, updateProfile } = authStore();
@@ -15,7 +16,12 @@ const ProfilePage = () => {
   const handleUpdate = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const options = { maxSizeMB: 0.3, maxWidthOrHeight: 800, useWebWorker: true };
+
+    const options = {
+      maxSizeMB: 0.3,
+      maxWidthOrHeight: 800,
+      useWebWorker: true,
+    };
 
     try {
       const compressedFile = await imageCompression(file, options);
@@ -23,7 +29,9 @@ const ProfilePage = () => {
       reader.readAsDataURL(compressedFile);
       reader.onload = () => {
         const newPic = reader.result;
-        authStore.setState({ loggedUser: { ...loggedUser, profilepic: newPic } });
+        authStore.setState({
+          loggedUser: { ...loggedUser, profilepic: newPic },
+        });
         setOpenPopup(false);
         updateProfile({ profilepic: newPic });
       };
@@ -33,7 +41,9 @@ const ProfilePage = () => {
   };
 
   const handleDelete = () => {
-    authStore.setState({ loggedUser: { ...loggedUser, profilepic: null } });
+    authStore.setState({
+      loggedUser: { ...loggedUser, profilepic: null },
+    });
     setOpenPopup(false);
     updateProfile({ profilepic: null });
   };
@@ -45,16 +55,33 @@ const ProfilePage = () => {
         <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-pink-400 opacity-20 rounded-full z-0 animate-pulse"></div>
 
         <div className="relative z-10 flex flex-col items-center gap-6">
-          <img
-            src={avatarUrl}
-            onError={(e) => (e.target.src = "/avatar.avif")}
-            alt="Profile"
-            className="w-36 h-36 rounded-full border-2 border-blue-400 shadow-lg object-cover cursor-pointer"
-            onClick={() => setOpenPopup(true)}
-          />
+
+          {/* Avatar + Edit Icon */}
+          <div className="relative group">
+            <img
+              src={avatarUrl}
+              onError={(e) => (e.target.src = "/avatar.avif")}
+              alt="Profile"
+              className="w-36 h-36 rounded-full border-2 border-blue-400 shadow-lg object-cover cursor-pointer"
+              onClick={() => setOpenPopup(true)}
+            />
+
+            {/* Pencil Edit Button */}
+            <button
+              onClick={() => setOpenPopup(true)}
+              className="absolute bottom-2 right-2 w-9 h-9 rounded-full
+                         bg-[#3D76E9] hover:bg-[#3367CC]
+                         flex items-center justify-center
+                         shadow-lg transition"
+            >
+              <FiEdit2 className="text-white text-lg" />
+            </button>
+          </div>
+
           <h2 className="text-3xl font-bold text-white text-center">
             {loggedUser.username}
           </h2>
+
           <p className="text-gray-200 text-lg text-center tracking-wide">
             {loggedUser.email}
           </p>
@@ -79,11 +106,10 @@ const ProfilePage = () => {
               className="w-44 h-44 rounded-full object-cover shadow-xl border-2 border-[#607dff]"
             />
 
-            {/* CHANGE PHOTO — Blue (same as app theme) */}
             <label
               htmlFor="popup-upload"
               className="w-full py-3 rounded-xl text-center font-medium text-lg cursor-pointer shadow-md
-              bg-[#3D76E9] hover:bg-[#3367CC] text-white transition"
+                         bg-[#3D76E9] hover:bg-[#3367CC] text-white transition"
             >
               Change Photo
               <input
@@ -95,11 +121,10 @@ const ProfilePage = () => {
               />
             </label>
 
-            {/* REMOVE PHOTO — Gray (NOT RED) */}
             <button
               onClick={handleDelete}
               className="w-full py-3 rounded-xl font-medium text-lg shadow-md
-              bg-[#3A3D4F] hover:bg-[#4B4F63] text-gray-200 transition"
+                         bg-[#3A3D4F] hover:bg-[#4B4F63] text-gray-200 transition"
             >
               Remove Photo
             </button>
