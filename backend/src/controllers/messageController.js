@@ -193,8 +193,6 @@ export const getMessages = async (req, res) => {
   }
 };
 
-/* ===================== SEND MESSAGE (CLOUDINARY) ===================== */
-/* ===================== SEND MESSAGE (CLOUDINARY) ===================== */
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
@@ -275,5 +273,55 @@ export const markMessagesSeen = async (req, res) => {
     res.status(200).json({ success: true });
   } catch {
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+export const deleteMessageForMe = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { messageId } = req.params;
+
+    await Messages.findByIdAndUpdate(messageId, {
+      $addToSet: { deletedFor: userId },
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete message" });
+  }
+};
+export const deleteMessageForEveryone = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { messageId } = req.params;
+
+    const message = await Messages.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // ❗ Only sender can delete for everyone
+    if (message.senderId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    message.isDeletedForEveryone = true;
+    message.text = "";
+    message.image = "";
+    message.audio = "";
+    message.fileUrl = "";
+    message.caption = "";
+
+    await message.save();
+
+    // 🔔 Notify receiver in real-time
+    const receiverSocketId = getReceiverSocketId(message.receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageDeleted", message);
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete message" });
   }
 };

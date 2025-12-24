@@ -33,6 +33,9 @@ audioDuration: { type: Number, default: 0 },
 
     // 👁️ Seen status
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+     // ✅ DELETE FEATURE
+    isDeletedForEveryone: { type: Boolean, default: false },
+    deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

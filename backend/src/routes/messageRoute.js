@@ -73,6 +73,8 @@ import {
   getMessages,
   sendMessage,
   markMessagesSeen,
+  deleteMessageForEveryone,
+  deleteMessageForMe,
 } from "../controllers/messageController.js";
 
 const route = express.Router();
@@ -88,5 +90,6 @@ route.post(
 );
 
 route.put("/mark-seen/:_id", checkAuth, markMessagesSeen);
-
+route.put("/delete-for-me/:messageId", checkAuth, deleteMessageForMe);
+route.put("/delete-for-everyone/:messageId", checkAuth, deleteMessageForEveryone);
 export default route;
