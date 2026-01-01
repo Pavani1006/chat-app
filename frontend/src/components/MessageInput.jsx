@@ -28,6 +28,8 @@ const MessageInput = () => {
   const typingTimeoutRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordStartTimeRef = useRef(0);
+
 
   // ✅ ADDED: flag to control when audio should be sent
   const shouldSendAudioRef = useRef(false);
@@ -90,56 +92,79 @@ return () => document.removeEventListener("click", handleOutside);
   };
 
   /* -------------------- AUDIO RECORDING -------------------- */
-  const startRecording = async () => {
-    try {
-      // ✅ ADDED: reset send flag
-      shouldSendAudioRef.current = false;
+ /* -------------------- AUDIO RECORDING FIX -------------------- */
+const startRecording = async () => {
+  try {
+    shouldSendAudioRef.current = false;
+    setShowRecordingUI(true);
+    setPaused(false);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
+    recordStartTimeRef.current = Date.now();
 
-      setShowRecordingUI(true);
-      setPaused(false);
-      setRecordingTime(0);
-      audioChunksRef.current = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Specify MIME type. webm is standard, but some browsers prefer mp4/aac
+  const mimeType = MediaRecorder.isTypeSupported("audio/mp4")
+  ? "audio/mp4"
+  : "audio/webm;codecs=opus";
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
+const recorder = new MediaRecorder(stream, { mimeType });
+mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
 
-      recorder.onstop = () => {
-        // ✅ FIX: send ONLY if user clicked Send
-        if (!shouldSendAudioRef.current) {
-          resetRecordingState();
-          return;
-        }
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        audioChunksRef.current.push(e.data);
+      }
+    };
 
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `voice_${Date.now()}.webm`, {
-          type: "audio/webm",
-        });
+    recorder.onstop = () => {
+  if (!shouldSendAudioRef.current) {
+    resetRecordingState();
+    return;
+  }
 
-        resetRecordingState();
+  
+  // ✅ FIX: Use the actual recordingTime state for accuracy
+  const finalDuration = recordingTime; 
 
-        sendMessage({
-          file,
-          text: "",
-          caption: "",
-          image: "",
-          audio: "",
-          audioDuration: recordingTime,
-        });
-      };
+ const blob = new Blob(audioChunksRef.current, {
+  type: recorder.mimeType,
+});
 
-      recorder.start();
-      timerRef.current = setInterval(() => {
-        setRecordingTime((t) => t + 1);
-      }, 1000);
-    } catch {
-      toast.error("Microphone blocked!");
-    }
-  };
+const ext = recorder.mimeType.includes("mp4") ? "mp4" : "webm";
+
+const file = new File(
+  [blob],
+  `voice_${Date.now()}.${ext}`,
+  { type: recorder.mimeType }
+);
+
+
+  resetRecordingState();
+
+  sendMessage({
+    file,
+    text: "",
+    audioDuration: finalDuration, // This sends the seconds to the server
+    isAudio: true, 
+  });
+};
+
+    // IMPORTANT: Collect data every 1 second (1000ms) 
+    // This ensures audioChunksRef isn't empty if the stop is sudden
+    recorder.start(1000); 
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime((t) => t + 1);
+    }, 1000);
+  } catch (err) {
+    console.error("Mic Error:", err);
+    toast.error("Microphone blocked or not found!");
+    setShowRecordingUI(false);
+  }
+};
 
   const pauseRecording = () => {
     mediaRecorderRef.current?.pause();
