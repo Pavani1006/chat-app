@@ -6,7 +6,17 @@ import { BsThreeDotsVertical } from "react-icons/bs";
 import { axiosInstance } from "../lib/axios";
 
 const Messages = () => {
-  const { selectedUser, getMessages, messages, loadingMessages } = chatStore();
+  const {
+    selectedUser,
+    getMessages,
+    messages,
+    loadingMessages,
+    setForwardMessage,
+    forwardMessage,
+    clearForwardMessage,
+    sendMessage,
+    users,
+  } = chatStore();
   const { loggedUser } = authStore();
 
   const messagesEndRef = useRef(null);
@@ -17,6 +27,12 @@ const Messages = () => {
 
   // per-message audio timing state
   const [audioTimes, setAudioTimes] = useState({});
+  useEffect(() => {
+    if (forwardMessage) {
+      console.log("FORWARD CLICKED → fetching users");
+      chatStore.getState().getUsers();
+    }
+  }, [forwardMessage]);
 
   /* ===================== CLOSE MENU ===================== */
   useEffect(() => {
@@ -40,11 +56,11 @@ const Messages = () => {
 
   /* ===================== HELPERS ===================== */
   const formatTime = (sec) => {
-  if (!sec || isNaN(sec)) return "00:00";
-  const mins = Math.floor(sec / 60);
-  const secs = Math.floor(sec % 60);
-  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-};
+    if (!sec || isNaN(sec)) return "00:00";
+    const mins = Math.floor(sec / 60);
+    const secs = Math.floor(sec % 60);
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -112,7 +128,8 @@ const Messages = () => {
 
   /* ===================== RENDER ===================== */
   return (
-    <div className="p-4 space-y-4 overflow-y-auto pb-10">
+    <>
+    <div className="p-4 space-y-4 pb-10 overflow-y-auto">
       {previewImage && (
         <div
           className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4"
@@ -134,8 +151,7 @@ const Messages = () => {
           new Date(msg.createdAt).toDateString() !==
             new Date(messages[index - 1].createdAt).toDateString();
 
-        const isSender =
-          String(msg.senderId) === String(loggedUser._id);
+        const isSender = String(msg.senderId) === String(loggedUser._id);
 
         const audioState = audioTimes[msg._id] || {
           current: 0,
@@ -152,47 +168,63 @@ const Messages = () => {
 
             <div className={isSender ? "flex justify-end" : "flex"}>
               <div
-  className={`relative w-fit max-w-[70%] py-2.5 px-4 rounded-2xl shadow ${
-    isSender
-      ? "bg-white text-gray-900 rounded-br-none"
-      : "bg-gray-200 text-gray-900 rounded-bl-none"
-  }`}
->
-
+                className={`relative w-fit max-w-[70%] py-2.5 px-4 rounded-2xl shadow ${
+                  isSender
+                    ? "bg-white text-gray-900 rounded-br-none"
+                    : "bg-gray-200 text-gray-900 rounded-bl-none"
+                }`}
+              >
                 {/* MENU */}
-                {isSender && !msg.isDeletedForEveryone && (
+                {!msg.isDeletedForEveryone && (
                   <div
                     className="absolute top-2 right-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       onClick={() =>
-                        setOpenMenuId(
-                          openMenuId === msg._id ? null : msg._id
-                        )
+                        setOpenMenuId(openMenuId === msg._id ? null : msg._id)
                       }
                     >
                       <BsThreeDotsVertical size={14} />
                     </button>
 
                     {openMenuId === msg._id && (
-                      <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow text-sm">
+                      <div
+                        className={`absolute mt-2 min-w-[180px] bg-white border rounded-lg shadow text-sm z-50
+      ${isSender ? "right-0" : "left-0"}
+    `}
+                      >
                         <button
                           onClick={() => deleteForMe(msg._id)}
-                          className="w-full px-4 py-2 hover:bg-gray-100"
+                          className="w-full px-4 py-2 text-left whitespace-nowrap hover:bg-gray-100"
                         >
                           Delete for me
                         </button>
+
+                        {isSender && (
+                          <button
+                            onClick={() => deleteForEveryone(msg._id)}
+                            className="w-full px-4 py-2 text-left whitespace-nowrap text-red-600 hover:bg-red-50"
+                          >
+                            Delete for everyone
+                          </button>
+                        )}
+
                         <button
-                          onClick={() => deleteForEveryone(msg._id)}
-                          className="w-full px-4 py-2 text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setForwardMessage(msg);
+                            setOpenMenuId(null);
+                          }}
+                          className="w-full px-4 py-2 text-left whitespace-nowrap hover:bg-gray-100"
                         >
-                          Delete for everyone
+                          Forward
                         </button>
                       </div>
                     )}
                   </div>
                 )}
+
+                
 
                 {msg.isDeletedForEveryone ? (
                   <p className="italic text-gray-400 text-sm">
@@ -200,6 +232,11 @@ const Messages = () => {
                   </p>
                 ) : (
                   <>
+                  {msg.isForwarded && (
+  <p className="text-[11px] text-gray-400 italic mb-1">
+    Forwarded
+  </p>
+)}
                     {/* IMAGE */}
                     {msg.image && (
                       <img
@@ -211,46 +248,42 @@ const Messages = () => {
                     )}
 
                     {/* AUDIO */}
-                   {/* AUDIO */}
-{msg.isAudio && msg.fileUrl && (
-  <div className="mt-2 inline-flex max-w-[220px] bg-gray-100 rounded-lg px-2 py-1.5">
+                    {/* AUDIO */}
+                    {msg.isAudio && msg.fileUrl && (
+                      <div className="mt-2 inline-flex max-w-[220px] bg-gray-100 rounded-lg px-2 py-1.5">
+                        <audio
+                          className="h-8 w-[220px]"
+                          src={msg.fileUrl}
+                          preload="metadata"
+                          controls
+                          onLoadedMetadata={(e) => {
+                            const audio = e.currentTarget;
+                            if (!audio || !isFinite(audio.duration)) return;
 
-    <audio
-      className="h-8 w-[220px]"
-  src={msg.fileUrl}
-  preload="metadata"
-  controls
+                            setAudioTimes((prev) => ({
+                              ...prev,
+                              [msg._id]: {
+                                current: 0,
+                                duration: Math.floor(audio.duration),
+                              },
+                            }));
+                          }}
+                          onTimeUpdate={(e) => {
+                            const audio = e.currentTarget;
+                            if (!audio) return;
 
-  onLoadedMetadata={(e) => {
-    const audio = e.currentTarget;
-    if (!audio || !isFinite(audio.duration)) return;
-
-    setAudioTimes((prev) => ({
-      ...prev,
-      [msg._id]: {
-        current: 0,
-        duration: Math.floor(audio.duration),
-      },
-    }));
-  }}
-
-  onTimeUpdate={(e) => {
-    const audio = e.currentTarget;
-    if (!audio) return;
-
-    setAudioTimes((prev) => ({
-      ...prev,
-      [msg._id]: {
-        current: Math.floor(audio.currentTime || 0),
-        duration: prev[msg._id]?.duration || 0,
-      },
-    }));
-  }}
-/>
-
-    
-  </div>
-)}
+                            setAudioTimes((prev) => ({
+                              ...prev,
+                              [msg._id]: {
+                                current: Math.floor(audio.currentTime || 0),
+                                duration: prev[msg._id]?.duration || 0,
+                              },
+                            }));
+                          }}
+                        />
+                        
+                      </div>
+                    )}
 
                     {/* DOCUMENT */}
                     {msg.fileUrl && !msg.isAudio && (
@@ -272,16 +305,14 @@ const Messages = () => {
                       </div>
                     )}
 
-                    {msg.text && (
-                      <p className="mt-1 break-words">{msg.text}</p>
-                    )}
+                    {msg.text && <p className="mt-1 break-words">{msg.text}</p>}
 
                     <div className="flex justify-end gap-1 mt-1 text-[10px] text-gray-500">
                       <span>
-                        {new Date(msg.createdAt).toLocaleTimeString(
-                          [],
-                          { hour: "2-digit", minute: "2-digit" }
-                        )}
+                        {new Date(msg.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
 
                       {isSender &&
@@ -301,6 +332,49 @@ const Messages = () => {
 
       <div ref={messagesEndRef} />
     </div>
+    {forwardMessage && (
+      <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center">
+        <div className="bg-white text-gray-900 rounded-xl w-[320px] h-[420px] overflow-y-auto p-4">
+
+          <h3 className="font-semibold mb-3">Forward to</h3>
+
+          {users.length === 0 ? (
+            <p className="text-center text-sm text-gray-400">
+              Loading contacts...
+            </p>
+          ) : (
+            users
+  .filter((u) => u._id !== loggedUser._id)
+  .map((user) => {
+    console.log("FORWARD USER OBJECT:", user);
+
+    return (
+      <button
+        key={user._id}
+        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 text-gray-900"
+        onClick={() => {
+          chatStore
+            .getState()
+            .forwardToUser(user._id, forwardMessage);
+          clearForwardMessage();
+        }}
+      >
+        {user.username}
+      </button>
+    );
+  })
+          )}
+
+          <button
+            className="mt-3 w-full text-sm text-red-500"
+            onClick={clearForwardMessage}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

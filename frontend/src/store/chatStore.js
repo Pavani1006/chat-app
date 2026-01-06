@@ -12,6 +12,9 @@ export const chatStore = create((set, get) => ({
   selectedUser: null,
   typingUserId: null,
   loadingMessages: false,
+  forwardMessage: null,
+setForwardMessage: (msg) => set({ forwardMessage: msg }),
+clearForwardMessage: () => set({ forwardMessage: null }),
 
   /* ===================== USERS ===================== */
   getUsers: async () => {
@@ -22,6 +25,34 @@ export const chatStore = create((set, get) => ({
       toast.error("Failed to fetch users.");
     }
   },
+
+
+forwardToUser: async (receiverId, message) => {
+  try {
+    const payload = {
+      text: message.text || "",
+      image: message.image || "",
+      audio: message.audio || "",
+      audioDuration: message.audioDuration || 0,
+      fileUrl: message.fileUrl || "",
+      fileName: message.fileName || "",
+      fileType: message.fileType || "",
+      caption: message.caption || "",
+      isForwarded: true,
+    };
+
+    const res = await axiosInstance.post(
+      `/message/sendmessage/${receiverId}`,
+      payload
+    );
+
+    // optional: add immediately to UI if chat is open
+    // set((state) => ({ messages: [...state.messages, res.data] }));
+  } catch (err) {
+    console.error("Forward message failed", err);
+  }
+},
+
 
   /* ===================== GET MESSAGES ===================== */
   getMessages: async () => {
@@ -68,6 +99,7 @@ const tempMessage = {
   pending: true,
   createdAt: new Date().toISOString(),
   isOptimistic: true,
+  
 };
 
     set({ messages: [...messages, tempMessage] });

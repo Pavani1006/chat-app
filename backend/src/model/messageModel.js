@@ -30,7 +30,10 @@ audioDuration: { type: Number, default: 0 },
     fileUrl: { type: String, default: "" }, // localhost URL
     fileName: { type: String, default: "" }, // original file name
     fileType: { type: String, default: "" }, // pdf / doc / ppt etc.
-
+isForwarded: {
+  type: Boolean,
+  default: false,
+},
     // 👁️ Seen status
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
      // ✅ DELETE FEATURE
