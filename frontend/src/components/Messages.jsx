@@ -249,41 +249,50 @@ const Messages = () => {
 
                     {/* AUDIO */}
                     {/* AUDIO */}
-                    {msg.isAudio && msg.fileUrl && (
-                      <div className="mt-2 inline-flex max-w-[220px] bg-gray-100 rounded-lg px-2 py-1.5">
-                        <audio
-                          className="h-8 w-[220px]"
-                          src={msg.fileUrl}
-                          preload="metadata"
-                          controls
-                          onLoadedMetadata={(e) => {
-                            const audio = e.currentTarget;
-                            if (!audio || !isFinite(audio.duration)) return;
+                   {/* AUDIO */}
+{msg.isAudio && (
+  <>
+    {msg.fileUrl ? (
+      <div className="mt-2 inline-flex max-w-[220px] bg-gray-100 rounded-lg px-2 py-1.5">
+        <audio
+          className="h-8 w-[220px]"
+          src={msg.fileUrl}
+          preload="metadata"
+          controls
+          onLoadedMetadata={(e) => {
+            const audio = e.currentTarget;
+            if (!audio || !isFinite(audio.duration)) return;
 
-                            setAudioTimes((prev) => ({
-                              ...prev,
-                              [msg._id]: {
-                                current: 0,
-                                duration: Math.floor(audio.duration),
-                              },
-                            }));
-                          }}
-                          onTimeUpdate={(e) => {
-                            const audio = e.currentTarget;
-                            if (!audio) return;
+            setAudioTimes((prev) => ({
+              ...prev,
+              [msg._id]: {
+                current: 0,
+                duration: Math.floor(audio.duration),
+              },
+            }));
+          }}
+          onTimeUpdate={(e) => {
+            const audio = e.currentTarget;
+            if (!audio) return;
 
-                            setAudioTimes((prev) => ({
-                              ...prev,
-                              [msg._id]: {
-                                current: Math.floor(audio.currentTime || 0),
-                                duration: prev[msg._id]?.duration || 0,
-                              },
-                            }));
-                          }}
-                        />
-                        
-                      </div>
-                    )}
+            setAudioTimes((prev) => ({
+              ...prev,
+              [msg._id]: {
+                current: Math.floor(audio.currentTime || 0),
+                duration: prev[msg._id]?.duration || 0,
+              },
+            }));
+          }}
+        />
+      </div>
+    ) : (
+      <div className="mt-2 px-3 py-2 rounded-lg bg-gray-100 text-xs text-gray-500">
+        Sending voice message…
+      </div>
+    )}
+  </>
+)}
+
 
                     {/* DOCUMENT */}
                     {msg.fileUrl && !msg.isAudio && (

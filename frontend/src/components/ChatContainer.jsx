@@ -3,18 +3,21 @@ import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
 import { chatStore } from "../store/chatStore";
+import IncomingCallModal from "./IncomingCallModal"; 
 import "../index.css";
 
 const ChatContainer = () => {
   useEffect(() => {
     const store = chatStore.getState();
 
-    // ✅ start socket listeners
+    console.log("🔌 Registering socket listeners");
+
     store.listenForNewMessage();
     store.listenForTyping();
 
-    // ✅ cleanup on unmount
     return () => {
+      console.log("🧹 Cleaning up socket listeners");
+
       store.stopListeningForMessages();
       store.stopListeningForTyping();
     };
@@ -22,6 +25,7 @@ const ChatContainer = () => {
 
   return (
     <div className="flex flex-col h-full bg-base-100 shadow-lg w-full">
+        <IncomingCallModal />
       <ChatHeader />
 
       <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">

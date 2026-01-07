@@ -63,32 +63,45 @@ export const getMessages = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-
     const senderId = req.user._id;
     const receiverId = req.params._id;
 
-    let { text = "", caption = "", image = "", audio = "", audioDuration = 0,isForwarded = false, } = req.body;
+    // 1. ADD 'isAudio' HERE inside the let block so it is declared
+    let { 
+      text = "", 
+      caption = "", 
+      image = "", 
+      audio = "", 
+      audioDuration = 0, 
+      isForwarded = false,
+      isAudio = false // ✅ Declaration added here
+    } = req.body;
 
-   let fileUrl = req.body.fileUrl || "";
-let fileName = req.body.fileName || "";
-let fileType = req.body.fileType || "";
-console.log("SEND MESSAGE BODY:", req.body);
+    // 2. Now this line will work perfectly
+    if (req.body.isAudio === "true") isAudio = true;
+
+    let fileUrl = req.body.fileUrl || "";
+    let fileName = req.body.fileName || "";
+    let fileType = req.body.fileType || "";
+
+    console.log("SEND MESSAGE BODY:", req.body);
     console.log("SEND MESSAGE FILE:", req.file);
-    if (req.file) {
-      // req.file.path is the URL from Cloudinary
-      const cloudUrl = req.file.path; 
 
-      if (req.file.mimetype.startsWith("audio/")) {
-        audio = cloudUrl;
-      } else if (req.file.mimetype.startsWith("image/")) {
-        image = cloudUrl;
-      } else {
-        /* ✅ PDF FIX: Ensure the URL ends correctly and is served as a document */
-        fileUrl = cloudUrl;
-        fileName = req.file.originalname;
-        fileType = req.file.mimetype;
-      }
-    }
+   if (req.file) {
+  const cloudUrl = req.file.path;
+
+  if (req.file.mimetype.startsWith("audio/")) {
+    fileUrl = cloudUrl;      // ✅ AUDIO MUST GO HERE
+    isAudio = true;
+  } else if (req.file.mimetype.startsWith("image/")) {
+    image = cloudUrl;
+  } else {
+    fileUrl = cloudUrl;
+    fileName = req.file.originalname;
+    fileType = req.file.mimetype;
+  }
+}
+
 
     const newMessage = new Messages({
       senderId,
@@ -96,13 +109,14 @@ console.log("SEND MESSAGE BODY:", req.body);
       text,
       caption,
       image,
-      audio,
-      audioDuration,
+      // audio,
+      audioDuration: Number(audioDuration) || 0, // ✅ Good practice to ensure it's a number
+      isAudio,
       fileUrl,
       fileName,
       fileType,
       seenBy: [senderId],
-        isForwarded,
+      isForwarded,
     });
 
     await newMessage.save();

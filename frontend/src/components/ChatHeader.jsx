@@ -1,14 +1,37 @@
 import { authStore } from "../store/authStore";
 import { chatStore } from "../store/chatStore";
 import { RxCross2 } from "react-icons/rx";
+import { FaPhoneAlt, FaVideo } from "react-icons/fa";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser, typingUserId } = chatStore();
   const { onlineUsers } = authStore();
+const socket = authStore.getState().socket;
 
   if (!selectedUser) return null;
 
   const isTyping = typingUserId === selectedUser._id;
+  const startAudioCall = () => {
+  if (!socket || !selectedUser) return;
+
+  console.log("📞 Starting audio call to", selectedUser._id);
+
+  socket.emit("call:start", {
+    to: selectedUser._id,
+    type: "audio",
+  });
+};
+
+const startVideoCall = () => {
+  if (!socket || !selectedUser) return;
+
+  console.log("🎥 Starting video call to", selectedUser._id);
+
+  socket.emit("call:start", {
+    to: selectedUser._id,
+    type: "video",
+  });
+};
 
   return (
     <div className="flex items-center justify-between px-3 py-2 bg-base-200 shadow-lg rounded-md lg:rounded-none w-full bg-gray-800">
@@ -38,13 +61,32 @@ const ChatHeader = () => {
         </div>
       </div>
 
-      <button
-        onClick={() => setSelectedUser(null)}
-        className="p-2 lg:p-3 rounded-full hover:bg-base-300 transition"
-        title="Close chat"
-      >
-        <RxCross2 className="text-white text-2xl lg:text-2xl" />
-      </button>
+      <div className="flex items-center gap-2">
+  <button
+    onClick={startAudioCall}
+    className="p-2 rounded-full hover:bg-gray-700 transition"
+    title="Audio Call"
+  >
+    <FaPhoneAlt className="text-white" />
+  </button>
+
+  <button
+    onClick={startVideoCall}
+    className="p-2 rounded-full hover:bg-gray-700 transition"
+    title="Video Call"
+  >
+    <FaVideo className="text-white" />
+  </button>
+
+  <button
+    onClick={() => setSelectedUser(null)}
+    className="p-2 rounded-full hover:bg-gray-700 transition"
+    title="Close chat"
+  >
+    <RxCross2 className="text-white text-2xl" />
+  </button>
+</div>
+
     </div>
   );
 };

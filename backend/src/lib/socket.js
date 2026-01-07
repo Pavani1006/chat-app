@@ -45,6 +45,43 @@ io.on("connection", (socket) => {
       });
     }
   });
+/* ===================== CALL SIGNALING ===================== */
+
+// Caller → Receiver
+socket.on("call:start", ({ to, type }) => {
+  const receiverSocketId = userSocket[to];
+
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call:incoming", {
+      from: userId,
+      type, // "audio" | "video"
+    });
+  }
+});
+
+// Receiver accepts call
+socket.on("call:accept", ({ to }) => {
+  const receiverSocketId = userSocket[to];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call:accepted");
+  }
+});
+
+// Receiver rejects call
+socket.on("call:reject", ({ to }) => {
+  const receiverSocketId = userSocket[to];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call:rejected");
+  }
+});
+
+// Either side ends call
+socket.on("call:end", ({ to }) => {
+  const receiverSocketId = userSocket[to];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call:ended");
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);
