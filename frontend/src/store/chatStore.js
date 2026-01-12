@@ -495,56 +495,42 @@ console.log("🎯 BACKEND RESPONSE:", res.data);
   },
 
   /* ===================== SOCKET LISTENERS ===================== */
-  listenForNewMessage: () => {
-    const socket = authStore.getState().socket;
-    if (!socket) return;
+listenForNewMessage: () => {
+  const socket = authStore.getState().socket;
+  if (!socket) return;
 
-    /* ---- CHAT ---- */
-    socket.on("newMessage", (newMessage) => {
-      const { messages, selectedUser } = get();
-      const loggedUser = authStore.getState().loggedUser;
-if (newMessage.senderId === loggedUser._id) return;
-      const isChatOpen =
-        selectedUser &&
-        ((newMessage.senderId === selectedUser._id &&
-          newMessage.receiverId === loggedUser._id) ||
-          (newMessage.receiverId === selectedUser._id &&
-            newMessage.senderId === loggedUser._id));
+  // 🔥 prevent duplicate listeners
+  socket.off("newMessage");
 
-      if (isChatOpen) {
-        set({ messages: [...messages, newMessage] });
-      }
+  socket.on("newMessage", (newMessage) => {
+    const { messages, selectedUser, users } = get();
+    const loggedUser = authStore.getState().loggedUser;
+
+    // ignore own messages
+    if (newMessage.senderId === loggedUser._id) return;
+
+    const isChatOpen =
+      selectedUser &&
+      newMessage.senderId === selectedUser._id &&
+      newMessage.receiverId === loggedUser._id;
+
+    if (isChatOpen) {
+      set({ messages: [...messages, newMessage] });
+      return;
+    }
+
+    // increment unread count ONCE
+    set({
+      users: users.map((u) =>
+        u._id === newMessage.senderId
+          ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
+          : u
+      ),
     });
+  });
+},
 
-    socket.on("messageDeleted", (updatedMessage) => {
-      set((state) => ({
-        messages: state.messages.map((m) =>
-          m._id === updatedMessage._id ? updatedMessage : m
-        ),
-      }));
-    });
 
-    /* ---- CALL ---- */
-    socket.on("call:incoming", ({ from, type }) => {
-      console.log("📞 Incoming call", from, type);
-      set({ call: { from, type } });
-    });
-
-    socket.on("call:accepted", () => {
-      console.log("✅ Call accepted");
-      set({ inCall: true });
-    });
-
-    socket.on("call:rejected", () => {
-      console.log("❌ Call rejected");
-      set({ call: null, inCall: false });
-    });
-
-    socket.on("call:ended", () => {
-      console.log("📴 Call ended");
-      set({ call: null, inCall: false });
-    });
-  },
   /* ===================== SOCKET: TYPING ===================== */
 listenForTyping: () => {
   const socket = authStore.getState().socket;
@@ -569,16 +555,13 @@ stopListeningForTyping: () => {
 
 
   /* ===================== SOCKET CLEANUP ===================== */
-  stopListeningForMessages: () => {
-    const socket = authStore.getState().socket;
-    if (!socket) return;
+ stopListeningForMessages: () => {
+  const socket = authStore.getState().socket;
+  if (!socket) return;
 
-    socket.off("newMessage");
-    socket.off("messageDeleted");
+  // ONLY message-related listeners
+  socket.off("newMessage");
+  socket.off("messageDeleted");
+},
 
-    socket.off("call:incoming");
-    socket.off("call:accepted");
-    socket.off("call:rejected");
-    socket.off("call:ended");
-  },
 }));

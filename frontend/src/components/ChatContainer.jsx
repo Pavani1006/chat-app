@@ -4,9 +4,13 @@ import MessageInput from "./MessageInput";
 import Messages from "./Messages";
 import { chatStore } from "../store/chatStore";
 import IncomingCallModal from "./IncomingCallModal"; 
+import CallScreen from "./CallScreen";
+
 import "../index.css";
 
 const ChatContainer = () => {
+  const { inCall } = chatStore();
+
   useEffect(() => {
     const store = chatStore.getState();
 
@@ -22,6 +26,10 @@ const ChatContainer = () => {
       store.stopListeningForTyping();
     };
   }, []);
+
+    if (inCall) {
+    return <CallScreen />;
+  }
 
   return (
     <div className="flex flex-col h-full bg-base-100 shadow-lg w-full">

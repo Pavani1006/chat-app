@@ -38,7 +38,18 @@ const Sidebar = () => {
           return (
             <button
               key={user._id}
-              onClick={() => setSelectedUser({ ...user })}
+             onClick={() => {
+  setSelectedUser({ ...user });
+
+  chatStore.setState((state) => ({
+    users: state.users.map((u) =>
+      u._id === user._id
+        ? { ...u, unreadCount: 0 }
+        : u
+    ),
+  }));
+}}
+
               className={`
                 w-full flex items-center justify-between px-4 py-2.5 rounded-xl 
                 transition-all duration-300 group

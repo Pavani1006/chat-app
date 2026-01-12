@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
+import { chatStore } from "./chatStore";
 
 export const authStore = create((set, get) => ({
   loggedUser: null,
@@ -81,18 +82,63 @@ export const authStore = create((set, get) => ({
     }
   },
 
-  connectSocket: () => {
-    const { loggedUser } = get();
-    const socket = io("http://localhost:5000", {
-      query: { userId: loggedUser._id },
-    });
-    socket.connect();
-    set({ socket: socket });
-    socket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
-      console.log(userIds);
-    });
-  },
+connectSocket: () => {
+  const { loggedUser } = get();
+  if (!loggedUser) return;
+
+  const socket = io("http://192.168.1.9:5000", {
+    query: { userId: loggedUser._id },
+    withCredentials: true,
+  });
+
+  set({ socket });
+
+  socket.on("getOnlineUsers", (userIds) => {
+    set({ onlineUsers: userIds });
+  });
+
+  // 🔥 chat listeners
+  const chat = chatStore.getState();
+  chat.stopListeningForMessages();
+  chat.listenForNewMessage();
+  chat.listenForTyping();
+
+  // 🔥 call listeners (ONCE, GLOBAL)
+  get().listenForCalls();
+},
+
+
+listenForCalls: () => {
+  const socket = get().socket;
+  if (!socket) return;
+
+  socket.off("call:incoming");
+  socket.off("call:accepted");
+  socket.off("call:rejected");
+  socket.off("call:ended"); // Reset
+
+  socket.on("call:incoming", ({ from, type }) => {
+    chatStore.getState().setIncomingCall({ from, type });
+  });
+
+  socket.on("call:accepted", ({ from }) => {
+    chatStore.getState().setIncomingCall({ from, type: "audio" }); 
+    chatStore.getState().startCall();
+  });
+
+  // 🔥 ADD THIS: Listen for the signal from the other person
+  socket.on("call:ended", () => {
+    console.log("📴 Call ended by the other user");
+   chatStore.getState().clearCall();
+  chatStore.getState().endCall();
+  });
+
+  socket.on("call:rejected", () => {
+    chatStore.getState().clearCall();
+  });
+},
+
+
 
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
