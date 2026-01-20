@@ -121,10 +121,16 @@ listenForCalls: () => {
     chatStore.getState().setIncomingCall({ from, type });
   });
 
-  socket.on("call:accepted", ({ from }) => {
-    chatStore.getState().setIncomingCall({ from, type: "audio" }); 
+  // ... inside listenForCalls
+socket.on("call:accepted", ({ from }) => {
+    // FIX: Do not hardcode "audio". Keep the type from the current call state.
+    const currentCall = chatStore.getState().call;
+    chatStore.getState().setIncomingCall({ 
+        from, 
+        type: currentCall?.type || "audio" 
+    }); 
     chatStore.getState().startCall();
-  });
+});
 
   // 🔥 ADD THIS: Listen for the signal from the other person
   socket.on("call:ended", () => {
@@ -144,3 +150,6 @@ listenForCalls: () => {
     if (get().socket?.connected) get().socket.disconnect();
   },
 }));
+
+
+

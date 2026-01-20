@@ -25,7 +25,11 @@ const socket = authStore.getState().socket;
 const startVideoCall = () => {
   if (!socket || !selectedUser) return;
 
-  console.log("🎥 Starting video call to", selectedUser._id);
+  // FIX: Set the call state locally so CallScreen opens with "video" type
+  chatStore.getState().setIncomingCall({ 
+    from: authStore.getState().loggedUser._id, 
+    type: "video" 
+  });
 
   socket.emit("call:start", {
     to: selectedUser._id,
