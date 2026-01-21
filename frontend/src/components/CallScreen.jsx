@@ -14,17 +14,22 @@ const CallScreen = () => {
   const loggedUser = authStore((state) => state.loggedUser);
   const { call, endCall, users, inCall } = chatStore();
 
+  // refs
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const localAudioRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const peerRef = useRef(null);
   const startedRef = useRef(false);
 
+  // state
   const [timer, setTimer] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoHidden, setIsVideoHidden] = useState(false);
-
   const timerRef = useRef(null);
+
+ 
 
   const otherUserId =
     call?.from || chatStore.getState().selectedUser?._id;
@@ -36,12 +41,14 @@ const CallScreen = () => {
     call?.type || chatStore.getState().outgoingCallType;
 
   const isVideoCall = callType === "video";
-
-  /* ================= START WEBRTC ONLY AFTER ACCEPT ================= */
+ const avatarSrc =
+  otherUser?.profilepic && otherUser.profilepic.trim() !== ""
+    ? otherUser.profilepic
+    : "/avatar.avif";
+  /* ================= WEBRTC ================= */
   useEffect(() => {
     if (!socket || !otherUserId || !inCall) return;
     if (startedRef.current) return;
-
     startedRef.current = true;
 
     const pc = new RTCPeerConnection({
@@ -51,13 +58,21 @@ const CallScreen = () => {
 
     const startSession = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,            // 🔊 audio unchanged
-        video: isVideoCall,     // 🎥 video only for video call
+        audio: true,
+        video: isVideoCall,
       });
 
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.muted = true;
+      // attach local stream
+      if (isVideoCall) {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          localVideoRef.current.muted = true;
+        }
+      } else {
+        if (localAudioRef.current) {
+          localAudioRef.current.srcObject = stream;
+          localAudioRef.current.muted = true;
+        }
       }
 
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
@@ -70,9 +85,20 @@ const CallScreen = () => {
     };
 
     pc.ontrack = (e) => {
-      if (remoteVideoRef.current && e.streams[0]) {
-        remoteVideoRef.current.srcObject = e.streams[0];
+      const stream = e.streams[0];
+      if (!stream) return;
+
+      if (isVideoCall) {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+      } else {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play().catch(() => {});
+        }
       }
+
       setIsConnected(true);
     };
 
@@ -86,7 +112,6 @@ const CallScreen = () => {
     };
 
     const handleOffer = async ({ offer }) => {
-      if (pc.signalingState !== "stable") return;
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -95,19 +120,13 @@ const CallScreen = () => {
 
     const handleAnswer = async ({ answer }) => {
       if (pc.signalingState === "have-local-offer") {
-        await pc.setRemoteDescription(
-          new RTCSessionDescription(answer)
-        );
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
       }
     };
 
     const handleCandidate = async ({ candidate }) => {
       try {
-        if (pc.remoteDescription) {
-          await pc.addIceCandidate(
-            new RTCIceCandidate(candidate)
-          );
-        }
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch {}
     };
 
@@ -141,39 +160,44 @@ const CallScreen = () => {
       s % 60
     ).padStart(2, "0")}`;
 
-  /* ================= MUTE (UNCHANGED) ================= */
+  /* ================= MUTE ================= */
   const toggleMute = () => {
-    const stream = localVideoRef.current?.srcObject;
+    const stream =
+      localVideoRef.current?.srcObject ||
+      localAudioRef.current?.srcObject;
+
     if (!stream) return;
 
     const audioTrack = stream.getAudioTracks()[0];
     if (!audioTrack) return;
 
-    const nextMuted = !isMuted;
-    audioTrack.enabled = !nextMuted;
-    setIsMuted(nextMuted);
+    const next = !isMuted;
+    audioTrack.enabled = !next;
+    setIsMuted(next);
   };
 
-  /* ================= VIDEO TOGGLE (NEW) ================= */
+  /* ================= VIDEO TOGGLE ================= */
   const toggleVideo = () => {
     const stream = localVideoRef.current?.srcObject;
     if (!stream) return;
 
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!videoTrack) return;
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
 
-    const nextHidden = !isVideoHidden;
-    videoTrack.enabled = !nextHidden;
-    setIsVideoHidden(nextHidden);
+    const next = !isVideoHidden;
+    track.enabled = !next;
+    setIsVideoHidden(next);
   };
 
   /* ================= HANGUP ================= */
   const handleHangup = () => {
     socket.emit("call:end", { to: otherUserId });
 
-    localVideoRef.current?.srcObject
-      ?.getTracks()
-      .forEach((t) => t.stop());
+    const stream =
+      localVideoRef.current?.srcObject ||
+      localAudioRef.current?.srcObject;
+
+    stream?.getTracks().forEach((t) => t.stop());
 
     peerRef.current?.close();
     endCall();
@@ -182,82 +206,140 @@ const CallScreen = () => {
   if (!otherUserId) return null;
 
   /* ================= UI ================= */
-  return (
-  <div className="fixed inset-0 bg-black text-white z-[999]">
+  /* ================= UI ================= */
+return (
+  <div className="fixed inset-0 bg-black text-white z-[999] flex items-center justify-center">
 
-    {/* ================= REMOTE VIDEO ================= */}
-    <video
-      ref={remoteVideoRef}
-      autoPlay
-      playsInline
-      className="absolute inset-0 w-full h-full object-cover"
-    />
+    {/* ================= VIDEO CALL ================= */}
+    {isVideoCall && (
+      <div className="absolute inset-0 flex items-center justify-center bg-black">
+        <div className="w-[85%] max-w-4xl aspect-video rounded-xl overflow-hidden border border-white/20 shadow-2xl relative">
 
-    {/* ================= TOP OVERLAY ================= */}
-    <div className="absolute top-0 w-full p-4 bg-gradient-to-b from-black/70 to-transparent">
-      <div className="flex flex-col items-center gap-1">
-  <h2 className="text-xl font-semibold tracking-wide">
+          {/* REMOTE VIDEO */}
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
+
+          {/* LOCAL VIDEO */}
+          <div className="absolute top-4 right-4 w-32 h-44 rounded-xl overflow-hidden border border-white/20">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              style={{ transform: "scaleX(-1)" }}
+            />
+          </div>
+
+          {/* TOP INFO */}
+        {/* TOP INFO (AVATAR + NAME + TIMER) */}
+<div className="absolute top-4 left-0 right-0 flex flex-col items-center gap-2">
+
+  {/* AVATAR (same logic as ChatHeader) */}
+  <img
+    src={
+      otherUser?.profilepic && otherUser.profilepic.trim() !== ""
+        ? otherUser.profilepic
+        : "/avatar.avif"
+    }
+    alt="User Avatar"
+    className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+  />
+
+  {/* USERNAME */}
+  <h2 className="text-lg font-semibold">
     {otherUser?.username}
   </h2>
+
+  {/* TIMER */}
   <p className="text-sm text-gray-300">
     {!isConnected ? "Connecting…" : formatTime(timer)}
   </p>
 </div>
 
-    </div>
 
-    {/* ================= LOCAL VIDEO (PiP) ================= */}
-    {!isVideoHidden && (
-      <div className="absolute top-20 right-4 w-32 h-44 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
-        />
+          {/* CONTROLS */}
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-6">
+            <button
+              onClick={toggleVideo}
+              className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center"
+            >
+              {isVideoHidden ? <FaVideoSlash size={22} /> : <FaVideo size={22} />}
+            </button>
+
+            <button
+              onClick={toggleMute}
+              className={`w-14 h-14 rounded-full flex items-center justify-center
+                ${isMuted ? "bg-red-600" : "bg-gray-800"}`}
+            >
+              {isMuted ? <FaMicrophoneSlash size={22} /> : <FaMicrophone size={22} />}
+            </button>
+
+            <button
+              onClick={handleHangup}
+              className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center"
+            >
+              <MdCallEnd size={26} />
+            </button>
+          </div>
+        </div>
       </div>
     )}
 
-    {/* ================= CALLING OVERLAY ================= */}
-    {!isConnected && (
-      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-        <p className="text-lg animate-pulse">Calling…</p>
-      </div>
+    {/* ================= AUDIO CALL ================= */}
+    {!isVideoCall && (
+      <>
+        {/* AUDIO STREAMS */}
+        <audio ref={localAudioRef} autoPlay muted playsInline />
+        <audio ref={remoteAudioRef} autoPlay playsInline />
+
+        {/* AUDIO CARD */}
+        <div className="w-[420px] max-w-[90%] h-[520px] border-2 border-white/20 rounded-xl shadow-2xl bg-black/90 flex flex-col justify-between">
+
+          {/* TOP */}
+          <div className="pt-10 flex flex-col items-center gap-3">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-lg">
+              <img
+                src={avatarSrc}
+                alt="User avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <h2 className="text-xl font-semibold">
+              {otherUser?.username}
+            </h2>
+
+            <p className="text-sm text-gray-300">
+              {!isConnected ? "Calling…" : formatTime(timer)}
+            </p>
+          </div>
+          
+
+          {/* CONTROLS */}
+          <div className="pb-10 flex justify-center gap-6">
+            <button
+              onClick={toggleMute}
+              className={`w-16 h-16 rounded-full flex items-center justify-center
+                ${isMuted ? "bg-red-600" : "bg-gray-800"}`}
+            >
+              {isMuted ? <FaMicrophoneSlash size={24} /> : <FaMicrophone size={24} />}
+            </button>
+
+            <button
+              onClick={handleHangup}
+              className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center"
+            >
+              <MdCallEnd size={28} />
+            </button>
+          </div>
+        </div>
+      </>
     )}
-
-    {/* ================= CONTROLS BAR ================= */}
-    <div className="absolute bottom-0 w-full pb-8 pt-6 flex justify-center bg-gradient-to-t from-black/80 to-transparent backdrop-blur-md">
-      <div className="flex items-center gap-6">
-
-        {/* VIDEO TOGGLE */}
-        <button
-          onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition
-            ${isVideoHidden ? "bg-gray-600" : "bg-gray-800 hover:bg-gray-700"}`}
-        >
-          {isVideoHidden ? <FaVideoSlash size={20} /> : <FaVideo size={20} />}
-        </button>
-
-        {/* MUTE */}
-        <button
-          onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition
-            ${isMuted ? "bg-red-600" : "bg-gray-800 hover:bg-gray-700"}`}
-        >
-          {isMuted ? <FaMicrophoneSlash size={20} /> : <FaMicrophone size={20} />}
-        </button>
-
-        {/* END CALL */}
-        <button
-          onClick={handleHangup}
-          className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-xl active:scale-90"
-        >
-          <MdCallEnd size={28} />
-        </button>
-      </div>
-    </div>
   </div>
 );
 
