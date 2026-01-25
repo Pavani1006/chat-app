@@ -295,7 +295,7 @@ const Messages = () => {
 
 
                     {/* DOCUMENT */}
-                    {msg.fileUrl && !msg.isAudio && (
+                    {msg.fileUrl && !msg.isAudio && !msg.isVideo && (
                       <div
                         onClick={() =>
                           handleDownload(msg.fileUrl, msg.fileName)

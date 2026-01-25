@@ -3,6 +3,7 @@ import { authStore } from "../store/authStore";
 import imageCompression from "browser-image-compression";
 import { RxCross2 } from "react-icons/rx";
 import { FiEdit2 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
   const { loggedUser, updateProfile } = authStore();
@@ -47,10 +48,22 @@ const ProfilePage = () => {
     setOpenPopup(false);
     updateProfile({ profilepic: null });
   };
+const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="bg-gradient-to-r from-gray-500 to-gray-800 rounded-2xl shadow-2xl p-12 w-full max-w-xl relative overflow-hidden">
+        <button
+  onClick={() => navigate(-1)}
+  className="absolute top-4 right-4
+             w-10 h-10 rounded-full
+             bg-black/30 hover:bg-black/50
+             flex items-center justify-center
+             text-white transition z-20"
+>
+  <RxCross2 className="text-xl" />
+</button>
+
         <div className="absolute -top-12 -left-12 w-40 h-40 bg-blue-400 opacity-20 rounded-full z-0 animate-pulse"></div>
         <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-pink-400 opacity-20 rounded-full z-0 animate-pulse"></div>
 

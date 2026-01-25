@@ -91,41 +91,52 @@ export const chatStore = create((set, get) => ({
     const loggedUser = authStore.getState().loggedUser;
     const tmpId = uuid();
 
-    const tempMessage = {
-      _id: tmpId,
-      senderId: loggedUser._id,
-      receiverId: selectedUser._id,
-      text: data.text || "",
-      image: data.image || "",
-      fileUrl:"",
-      audioDuration: data.audioDuration || 0,
-      isAudio: data.isAudio || false,
-      pending: true,
-      createdAt: new Date().toISOString(),
-      isOptimistic: true,
-    };
+    const isAudio = data.file?.type?.startsWith("audio/");
+const isVideo = data.file?.type?.startsWith("video/");
+
+const tempMessage = {
+  _id: tmpId,
+  senderId: loggedUser._id,
+  receiverId: selectedUser._id,
+  text: data.text || "",
+  image: data.image || "",
+  fileUrl: data.file ? "uploading..." : "",
+  fileName: data.file?.name || "",
+  isAudio,
+  isVideo,
+  audioDuration: isAudio ? data.audioDuration || 0 : 0,
+  pending: true,
+  createdAt: new Date().toISOString(),
+  isOptimistic: true,
+};
+
 
     set({ messages: [...messages, tempMessage] });
 
     try {
       let res;
 
-      if (data.file instanceof File) {
-        const form = new FormData();
-        form.append("file", data.file);
-        form.append("text", data.text || "");
-        form.append("caption", data.caption || "");
-        form.append("image", data.image || "");
-        form.append("audio", data.audio || "");
-        form.append("audioDuration", data.audioDuration || 0);
-        form.append("isAudio", "true"); 
+   if (data.file instanceof File) {
+  const isAudio = data.file.type.startsWith("audio/");
+const isVideo = data.file?.type?.startsWith("video/");
 
-        res = await axiosInstance.post(
-          `/message/sendmessage/${selectedUser._id}`,
-          form,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      } else {
+  const form = new FormData();
+  form.append("file", data.file);
+  form.append("text", data.text || "");
+  form.append("caption", data.caption || "");
+  form.append("image", data.image || "");
+  form.append("audioDuration", isAudio ? data.audioDuration || 0 : 0);
+  form.append("isAudio", isAudio);
+form.append("isVideo", isVideo);
+
+
+  res = await axiosInstance.post(
+    `/message/sendmessage/${selectedUser._id}`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+}
+else {
         res = await axiosInstance.post(
           `/message/sendmessage/${selectedUser._id}`,
           { ...data, isAudio: data.isAudio || !!data.audio }
