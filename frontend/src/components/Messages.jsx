@@ -145,7 +145,45 @@ const Messages = () => {
 
       {messages.map((msg, index) => {
         if (msg.deletedFor?.includes(loggedUser._id)) return null;
+// 2. NEW: Hide "Missed Call" notifications from the Sender's view
+  // Only the person who WAS CALLED (receiver) should see the missed call text.
+  const isMissedCall = msg.messageType === "missed_call";
+  
+  const amISender = String(msg.senderId) === String(loggedUser._id);
+  if (isMissedCall) {
+    if (amISender) return null;
 
+    return (
+      <div key={msg._id} className="flex justify-center my-6 w-full group">
+        <div className="flex flex-col items-center gap-1">
+          {/* Main Badge */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/80 backdrop-blur-sm border border-red-100 shadow-sm rounded-2xl group-hover:shadow-md transition-all duration-300">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${msg.callType === 'video' ? 'bg-purple-50 text-purple-600' : 'bg-red-50 text-red-600'}`}>
+              {msg.callType === 'video' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+              )}
+            </div>
+            
+            <div className="flex flex-col">
+              <span className="text-[13px] font-semibold text-gray-800 tracking-tight">
+                {msg.text}
+              </span>
+              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (isMissedCall && amISender) return null;
         const showDate =
           index === 0 ||
           new Date(msg.createdAt).toDateString() !==
@@ -292,6 +330,15 @@ const Messages = () => {
     )}
   </>
 )}
+{/* VIDEO */}
+{msg.isVideo && msg.fileUrl && (
+  <video
+    src={msg.fileUrl}
+    controls
+    className="mt-2 max-w-[260px] rounded-lg"
+  />
+)}
+
 
 
                     {/* DOCUMENT */}

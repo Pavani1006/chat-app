@@ -48,6 +48,7 @@ export const chatStore = create((set, get) => ({
         audio: message.audio || "",
         audioDuration: message.audioDuration || 0,
         isAudio: message.isAudio || !!message.audio, 
+         isVideo: message.isVideo || false,
         fileUrl: message.fileUrl || "",
         fileName: message.fileName || "",
         fileType: message.fileType || "",

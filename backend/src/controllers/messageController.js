@@ -74,11 +74,16 @@ export const sendMessage = async (req, res) => {
       audio = "", 
       audioDuration = 0, 
       isForwarded = false,
-      isAudio = false // ✅ Declaration added here
+      isAudio = false, // ✅ Declaration added here
+      isVideo = false,
+
     } = req.body;
 
     // 2. Now this line will work perfectly
     if (req.body.isAudio === "true") isAudio = true;
+if (req.body.isVideo === "true" || req.body.isVideo === true) {
+  isVideo = true; // 🔥 REQUIRED FOR FORWARDED VIDEOS
+}
 
     let fileUrl = req.body.fileUrl || "";
     let fileName = req.body.fileName || "";
@@ -93,6 +98,12 @@ export const sendMessage = async (req, res) => {
   if (req.file.mimetype.startsWith("audio/")) {
     fileUrl = cloudUrl;      // ✅ AUDIO MUST GO HERE
     isAudio = true;
+  }
+   else if (req.file.mimetype.startsWith("video/")) {
+    fileUrl = cloudUrl;
+    fileName = req.file.originalname;
+    fileType = req.file.mimetype;
+    isVideo = true; // 🔥 THIS WAS MISSING
   } else if (req.file.mimetype.startsWith("image/")) {
     image = cloudUrl;
   } else {
@@ -113,6 +124,7 @@ export const sendMessage = async (req, res) => {
       audioDuration: Number(audioDuration) || 0, // ✅ Good practice to ensure it's a number
       isAudio,
       fileUrl,
+      isVideo,
       fileName,
       fileType,
       seenBy: [senderId],

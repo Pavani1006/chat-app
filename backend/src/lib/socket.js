@@ -165,15 +165,16 @@ io.on("connection", (socket) => {
 
   io.emit("getOnlineUsers", Object.keys(userSocket));
 
-  /* ===================== CALL START ===================== */
-  socket.on("call:start", async ({ to, type }) => {
+/* ===================== CALL START ===================== */
+/* ===================== CALL START ===================== */
+socket.on("call:start", async ({ to, type }) => {
   console.log("📞 CALL START:", userId, "→", to, type);
 
   const receiverSocketId = userSocket[to];
 
-  // 🔴 USER OFFLINE → MISSED CALL
+  // 🔴 CASE 1: USER OFFLINE → SAVE MISSED CALL, BUT DON'T EMIT "newMessage"
   if (!receiverSocketId) {
-    const missedCall = await Message.create({
+    await Message.create({
       senderId: userId,
       receiverId: to,
       text: `Missed ${type} call`,
@@ -181,44 +182,54 @@ io.on("connection", (socket) => {
       callType: type,
       seenBy: [userId],
     });
-
-    console.log("❌ MISSED CALL SAVED (USER OFFLINE):", missedCall);
-    return;
+    console.log("❌ MISSED CALL SAVED (USER OFFLINE)");
+    return; // Exit here. Sender doesn't need a message.
   }
 
-  // 🔵 USER ONLINE → TRACK CALL
+  // 🔵 CASE 2: USER ONLINE → TRACK AND WAIT FOR ANSWER
   activeCalls[`${userId}-${to}`] = {
     from: userId,
     to,
     type,
     accepted: false,
   };
-// ⏱️ TIMEOUT → USER DID NOT ANSWER
-setTimeout(async () => {
-  const callKey = `${userId}-${to}`;
-  const call = activeCalls[callKey];
 
-  if (call && !call.accepted) {
-    const missedCall = await Message.create({
-      senderId: userId,
-      receiverId: to,
-      text: `Missed ${type} call`,
-      messageType: "missed_call",
-      callType: type,
-      seenBy: [userId],
-    });
+  // ⏱️ TIMEOUT LOGIC (If they don't lift in 20s)
+  setTimeout(async () => {
+    const callKey = `${userId}-${to}`;
+    const call = activeCalls[callKey];
 
-    console.log("❌ MISSED CALL SAVED (TIMEOUT):", missedCall);
-    delete activeCalls[callKey];
-  }
-}, 20000); // 20 seconds
+    if (call && !call.accepted) {
+      const missedCall = await Message.create({
+        senderId: userId,
+        receiverId: to,
+        text: `Missed ${type} call`,
+        messageType: "missed_call",
+        callType: type,
+        seenBy: [userId],
+      });
 
+      // 🔥 FIX: Only notify the person who DIDN'T lift
+      const latestReceiverSocket = userSocket[to];
+      if (latestReceiverSocket) {
+        io.to(latestReceiverSocket).emit("newMessage", missedCall);
+        io.to(latestReceiverSocket).emit("call:ended"); // Tells receiver to stop ringing
+      }
+
+      // Tell the caller the call ended because of no answer
+      socket.emit("call:no_answer"); 
+
+      delete activeCalls[callKey];
+      console.log("❌ TIMEOUT: Receiver didn't lift.");
+    }
+  }, 20000); 
+
+  // Notify the receiver that a call is incoming
   io.to(receiverSocketId).emit("call:incoming", {
     from: userId,
     type,
   });
 });
-
 
   /* ===================== CALL ACCEPT ===================== */
   socket.on("call:accept", ({ to }) => {
@@ -238,58 +249,78 @@ setTimeout(async () => {
   });
 
   /* ===================== CALL REJECT ===================== */
-  socket.on("call:reject", async ({ to }) => {
-    console.log("❌ CALL REJECTED by", userId);
+ /* ===================== CALL REJECT ===================== */
+socket.on("call:reject", async ({ to }) => {
+  console.log("❌ CALL REJECTED by", userId);
 
-    const callKey = `${to}-${userId}`;
-    const call = activeCalls[callKey];
+  const callKey = `${to}-${userId}`; // 'to' is the original caller
+  const call = activeCalls[callKey];
 
-    if (call && !call.accepted) {
+  if (call && !call.accepted) {
+    const missedCall = await Message.create({
+      senderId: to,      // Original Caller
+      receiverId: userId, // The person who rejected (Receiver)
+      text: `Missed ${call.type} call`,
+      messageType: "missed_call",
+      callType: call.type,
+      seenBy: [to],
+    });
+
+    // 🔥 ONLY emit to the person who rejected (the receiver)
+    // The caller (to) already knows they were rejected via "call:rejected"
+    socket.emit("newMessage", missedCall); 
+  }
+
+  delete activeCalls[callKey];
+
+  const callerSocketId = userSocket[to];
+  if (callerSocketId) {
+    io.to(callerSocketId).emit("call:rejected");
+  }
+});
+
+/* ===================== DISCONNECT (CANCELLED BY CALLER) ===================== */
+socket.on("disconnect", async () => {
+  console.log("⚠️ User disconnected:", userId);
+
+  for (const key in activeCalls) {
+    const call = activeCalls[key];
+
+    // If the CALLER disconnects before the call is accepted
+    if (call.from === userId && !call.accepted) {
       const missedCall = await Message.create({
-        senderId: to,
-        receiverId: userId,
+        senderId: call.from,
+        receiverId: call.to,
         text: `Missed ${call.type} call`,
         messageType: "missed_call",
         callType: call.type,
-        seenBy: [to],
+        seenBy: [call.from],
       });
 
-      console.log("❌ MISSED CALL SAVED (REJECT):", missedCall);
-    }
-
-    delete activeCalls[callKey];
-
-    const receiverSocketId = userSocket[to];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call:rejected");
-    }
-  });
-
-  /* ===================== DISCONNECT (NO ANSWER) ===================== */
-  socket.on("disconnect", async () => {
-    console.log("⚠️ User disconnected:", userId);
-
-    for (const key in activeCalls) {
-      const call = activeCalls[key];
-
-      if (call.from === userId && !call.accepted) {
-        const missedCall = await Message.create({
-          senderId: call.from,
-          receiverId: call.to,
-          text: `Missed ${call.type} call`,
-          messageType: "missed_call",
-          callType: call.type,
-          seenBy: [call.from],
-        });
-
-        console.log("❌ MISSED CALL SAVED (OFFLINE):", missedCall);
-        delete activeCalls[key];
+      // 🔥 ONLY notify the person who was being called
+      const receiverSocketId = userSocket[call.to];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", missedCall);
       }
+      
+      delete activeCalls[key];
     }
+  }
 
-    delete userSocket[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocket));
-  });
+  delete userSocket[userId];
+  io.emit("getOnlineUsers", Object.keys(userSocket));
+});
+socket.on("call:end", ({ to }) => {
+  const receiverSocketId = userSocket[to];
+
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call:ended", {
+      from: userId,
+    });
+  }
+
+  // cleanup activeCalls
+});
 
   /* ===================== WEBRTC SIGNALING ===================== */
 
