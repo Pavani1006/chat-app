@@ -86,7 +86,7 @@ connectSocket: () => {
   const { loggedUser } = get();
   if (!loggedUser) return;
 
-  const socket = io("http://192.168.1.9:5000", {
+  const socket = io("https://connectly-backend-dkbq.onrender.com", {
     query: { userId: loggedUser._id },
     withCredentials: true,
   });
