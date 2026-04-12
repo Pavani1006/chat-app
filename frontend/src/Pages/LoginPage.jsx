@@ -2,6 +2,7 @@ import { useState } from "react";
 import { authStore } from "../store/authStore";
 import { Link } from "react-router-dom";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import LoginIllustration from "../assets/Login.png";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -28,7 +29,7 @@ const LoginPage = () => {
         {/* illustration */}
         <div className="hidden lg:flex items-center justify-center w-1/2 p-8">
           <img
-            src="/public/Login.png"
+            src={LoginIllustration}
             alt="Login Illustration"
             className="rounded-xl shadow-[0_0_18px_rgba(147,51,234,0.35)]"
           />

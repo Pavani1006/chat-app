@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { authStore } from "../store/authStore";
 import { Link } from "react-router-dom";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import SignupIllustration from "../assets/Signup.png";
 
 const SignUpPage = () => {
   const { signup } = authStore();
@@ -37,7 +38,7 @@ const SignUpPage = () => {
         {/* Illustration */}
         <div className="hidden lg:flex items-center justify-center w-1/2 p-8">
           <img
-            src="/public/Signup.png"
+            src={SignupIllustration}
             alt="Signup"
             className="rounded-xl shadow-[0_0_20px_rgba(147,51,234,0.35)]"
           />

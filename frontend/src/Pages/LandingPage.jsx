@@ -52,7 +52,7 @@ const LandingPage = () => {
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-purple-600/30 via-transparent to-indigo-500/30 blur-2xl pointer-events-none" />
               <div className="relative rounded-3xl bg-[#11111a] border border-white/10 p-4 shadow-[0_0_28px_rgba(0,0,0,0.6)]">
                 <img
-                  src="/public/img1.jpg"
+                  src="../assets/img1.jpg"
                   alt="Chat illustration"
                   className="w-full h-full object-cover rounded-2xl"
                 />
