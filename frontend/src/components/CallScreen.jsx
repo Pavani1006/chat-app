@@ -8,6 +8,7 @@ import {
   FaVideo,
   FaVideoSlash,
 } from "react-icons/fa";
+import avatar from '../assets/avatar.avif';
 
 const CallScreen = () => {
   const socket = authStore((state) => state.socket);
@@ -44,7 +45,7 @@ const CallScreen = () => {
  const avatarSrc =
   otherUser?.profilepic && otherUser.profilepic.trim() !== ""
     ? otherUser.profilepic
-    : "/avatar.avif";
+    : avatar;
   /* ================= WEBRTC ================= */
   useEffect(() => {
     if (!socket || !otherUserId || !inCall) return;
@@ -244,7 +245,7 @@ return (
     src={
       otherUser?.profilepic && otherUser.profilepic.trim() !== ""
         ? otherUser.profilepic
-        : "/avatar.avif"
+        : avatar
     }
     alt="User Avatar"
     className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
