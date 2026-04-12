@@ -21,7 +21,7 @@ const userSchema = mongoose.Schema(
       default:
         "/avatar.avif",
     },
-    profilepicPublicId: {      // ⚠️ NEW field for Cloudinary delete
+    profilepicPublicId: {      
       type: String,
       default: "",
     },

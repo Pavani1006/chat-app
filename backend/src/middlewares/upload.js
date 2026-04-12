@@ -5,7 +5,6 @@ import cloudinary from "../lib/cloudinary.js";
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
-    // 🖼️ Image files
     if (file.mimetype.startsWith("image/")) {
       return {
         folder: "images",
@@ -14,16 +13,14 @@ const storage = new CloudinaryStorage({
       };
     }
 
-    // 🎤 Audio files
     if (file.mimetype.startsWith("audio/")) {
       return {
         folder: "audio",
-        resource_type: "video", // Cloudinary treats audio as video
+        resource_type: "video",
         access_mode: "public",
       };
     }
 
-    // 🎥 Video files
     if (file.mimetype.startsWith("video/")) {
       return {
         folder: "videos",
@@ -32,10 +29,9 @@ const storage = new CloudinaryStorage({
       };
     }
 
-    // 📄 Documents (PDF, DOC, ZIP, etc.)
     return {
       folder: "documents",
-      resource_type: "auto", // 🔥 CRITICAL FIX
+      resource_type: "auto",
       access_mode: "public",
     };
   },

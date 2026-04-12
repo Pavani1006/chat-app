@@ -2,7 +2,6 @@ import Users from "../model/userModel.js";
 import Messages from "../model/messageModel.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 
-/* ===================== SIDEBAR USERS ===================== */
 export const contactsForSidebar = async (req, res) => {
   try {
     const loggedUserId = req.user._id;
@@ -32,11 +31,8 @@ export const contactsForSidebar = async (req, res) => {
   }
 };
 
-/* ===================== GET MESSAGES ===================== */
-/* ===================== GET MESSAGES ===================== */
 export const getMessages = async (req, res) => {
   try {
-    // FIX: Check both 'id' and '_id' to be safe
     const receiverId = req.params.id || req.params._id;
     const senderId = req.user._id;
 
@@ -51,7 +47,6 @@ export const getMessages = async (req, res) => {
       ],
     }).sort({ createdAt: 1 });
 
-    // This log will tell you exactly what's happening in your terminal
     console.log(`Fetching chat for: ${receiverId}. Found ${messages.length} messages.`);
 
     res.status(200).json(messages);
@@ -65,8 +60,6 @@ export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
     const receiverId = req.params._id;
-
-    // 1. ADD 'isAudio' HERE inside the let block so it is declared
     let { 
       text = "", 
       caption = "", 
@@ -74,15 +67,14 @@ export const sendMessage = async (req, res) => {
       audio = "", 
       audioDuration = 0, 
       isForwarded = false,
-      isAudio = false, // ✅ Declaration added here
+      isAudio = false, 
       isVideo = false,
 
     } = req.body;
 
-    // 2. Now this line will work perfectly
     if (req.body.isAudio === "true") isAudio = true;
 if (req.body.isVideo === "true" || req.body.isVideo === true) {
-  isVideo = true; // 🔥 REQUIRED FOR FORWARDED VIDEOS
+  isVideo = true; 
 }
 
     let fileUrl = req.body.fileUrl || "";
@@ -96,14 +88,14 @@ if (req.body.isVideo === "true" || req.body.isVideo === true) {
   const cloudUrl = req.file.path;
 
   if (req.file.mimetype.startsWith("audio/")) {
-    fileUrl = cloudUrl;      // ✅ AUDIO MUST GO HERE
+    fileUrl = cloudUrl;     
     isAudio = true;
   }
    else if (req.file.mimetype.startsWith("video/")) {
     fileUrl = cloudUrl;
     fileName = req.file.originalname;
     fileType = req.file.mimetype;
-    isVideo = true; // 🔥 THIS WAS MISSING
+    isVideo = true; 
   } else if (req.file.mimetype.startsWith("image/")) {
     image = cloudUrl;
   } else {
@@ -145,7 +137,6 @@ if (req.body.isVideo === "true" || req.body.isVideo === true) {
   }
 };
 
-/* ===================== MARK SEEN ===================== */
 export const markMessagesSeen = async (req, res) => {
   try {
     const viewerId = req.user._id;
@@ -197,7 +188,6 @@ export const deleteMessageForEveryone = async (req, res) => {
       return res.status(404).json({ message: "Message not found" });
     }
 
-    // ❗ Only sender can delete for everyone
     if (message.senderId.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -211,7 +201,6 @@ export const deleteMessageForEveryone = async (req, res) => {
 
     await message.save();
 
-    // 🔔 Notify receiver in real-time
     const receiverSocketId = getReceiverSocketId(message.receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("messageDeleted", message);
