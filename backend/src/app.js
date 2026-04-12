@@ -19,7 +19,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: true,
+    origin: "https://connectly-web-app.netlify.app/",
 
     credentials: true,
   })
