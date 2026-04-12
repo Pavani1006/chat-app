@@ -4,7 +4,6 @@ import imageCompression from "browser-image-compression";
 import { RxCross2 } from "react-icons/rx";
 import { FiEdit2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import avatar from '../assets/avatar.avif';
 
 const ProfilePage = () => {
   const { loggedUser, updateProfile } = authStore();
@@ -13,7 +12,7 @@ const ProfilePage = () => {
   const avatarUrl =
     loggedUser.profilepic && loggedUser.profilepic !== ""
       ? loggedUser.profilepic
-      : avatar;
+      : "/avatar.avif";
 
   const handleUpdate = async (e) => {
     const file = e.target.files[0];
@@ -74,7 +73,7 @@ const navigate = useNavigate();
           <div className="relative group">
             <img
               src={avatarUrl}
-              onError={(e) => (e.target.src = avatar)}
+              onError={(e) => (e.target.src = "/avatar.avif")}
               alt="Profile"
               className="w-36 h-36 rounded-full border-2 border-blue-400 shadow-lg object-cover cursor-pointer"
               onClick={() => setOpenPopup(true)}
@@ -115,7 +114,7 @@ const navigate = useNavigate();
 
             <img
               src={avatarUrl}
-              onError={(e) => (e.target.src = avatar)}
+              onError={(e) => (e.target.src = "/avatar.avif")}
               alt="Profile Preview"
               className="w-44 h-44 rounded-full object-cover shadow-xl border-2 border-[#607dff]"
             />

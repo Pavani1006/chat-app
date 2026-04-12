@@ -1,7 +1,6 @@
 import { chatStore } from "../store/chatStore";
 import { authStore } from "../store/authStore";
 import { useEffect, useRef } from "react";
-import avatar from '../assets/avatar.avif';
 
 const IncomingCallModal = () => {
   const { call, clearCall, startCall, users } = chatStore();
@@ -47,7 +46,7 @@ const IncomingCallModal = () => {
         <div className="flex flex-col items-center gap-4 mb-6">
           <div className="w-24 h-24 rounded-full bg-slate-700 overflow-hidden">
             <img 
-              src={caller?.profilepic?.trim() ? caller.profilepic : avatar} 
+              src={caller?.profilepic?.trim() ? caller.profilepic : "/avatar.avif"} 
               className="w-full h-full object-cover" 
               alt="caller" 
             />

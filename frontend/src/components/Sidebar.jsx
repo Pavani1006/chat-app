@@ -2,7 +2,6 @@ import { FaUserCircle } from "react-icons/fa";
 import { chatStore } from "../store/chatStore";
 import { useEffect } from "react";
 import { authStore } from "../store/authStore";
-import avatar from '../assets/avatar.avif';
 
 const Sidebar = () => {
   const { users, getUsers, setSelectedUser, selectedUser } = chatStore();
@@ -68,7 +67,7 @@ const Sidebar = () => {
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <img
-                    src={user.profilepic?.trim() ? user.profilepic : avatar}
+                    src={user.profilepic?.trim() ? user.profilepic : "/avatar.avif"}
                     alt="profile"
                     className={`
                       size-11 rounded-full object-cover

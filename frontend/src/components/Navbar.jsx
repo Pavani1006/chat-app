@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { FiMessageSquare } from "react-icons/fi";
 import { FaSignOutAlt } from "react-icons/fa";
 import { authStore } from "../store/authStore";
-import avatar from '../assets/avatar.avif';
 
 const Navbar = () => {
   const { logout, loggedUser } = authStore();
@@ -26,7 +25,7 @@ const Navbar = () => {
               src={
                 loggedUser.profilepic && loggedUser.profilepic.trim() !== ""
                   ? loggedUser.profilepic
-                  : avatar
+                  : "/avatar.avif"
               }
               alt="Profile"
               className="w-9 h-9 rounded-full object-cover cursor-pointer hover:opacity-80 transition"

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { axiosInstance } from "../lib/axios";
-import avatar from '../assets/avatar.avif';
 
 const Messages = () => {
   const {
@@ -425,12 +424,12 @@ const Messages = () => {
     alt="avatar"
     className="w-9 h-9 rounded-full object-cover"
     onError={(e) => {
-      e.target.src = avatar; // fallback if broken
+      e.target.src = "/avatar.avif"; // fallback if broken
     }}
   />
 ) : (
   <img
-    src={avatar}
+    src="/avatar.avif"
     alt="avatar"
     className="w-9 h-9 rounded-full object-cover"
   />

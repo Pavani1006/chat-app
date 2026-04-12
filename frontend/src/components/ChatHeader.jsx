@@ -4,7 +4,6 @@ import { chatStore } from "../store/chatStore";
 import { RxCross2 } from "react-icons/rx";
 import { FaPhoneAlt, FaVideo } from "react-icons/fa";
 import toast from "react-hot-toast";
-import avatar from '../assets/avatar.avif';
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser, typingUserId } = chatStore();
@@ -102,7 +101,7 @@ const startVideoCall = () => {
       <div className="flex items-center justify-between px-3 py-2 shadow-lg w-full bg-gray-800">
         <div className="flex items-center gap-3">
           <img
-            src={selectedUser.profilepic && selectedUser.profilepic.trim() !== "" ? selectedUser.profilepic : avatar}
+            src={selectedUser.profilepic && selectedUser.profilepic.trim() !== "" ? selectedUser.profilepic : "/avatar.avif"}
             alt="User Avatar"
             className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover"
           />
@@ -139,7 +138,7 @@ const startVideoCall = () => {
     src={
       selectedUser.profilepic && selectedUser.profilepic.trim() !== ""
         ? selectedUser.profilepic
-        : avatar
+        : "/avatar.avif"
     }
     alt=""
 className="w-32 h-32 rounded-full mb-6 ring-4 ring-gray-500"
