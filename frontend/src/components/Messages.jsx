@@ -227,38 +227,38 @@ const Messages = () => {
                     </button>
 
                     {openMenuId === msg._id && (
-                      <div
-                        className={`absolute mt-2 min-w-[180px] bg-white border rounded-lg shadow text-sm z-50
-      ${isSender ? "right-0" : "left-0"}
-    `}
-                      >
-                        <button
-                          onClick={() => deleteForMe(msg._id)}
-                          className="w-full px-4 py-2 text-left whitespace-nowrap hover:bg-gray-100"
-                        >
-                          Delete for me
-                        </button>
+  <div
+    className={`absolute ${
+      isSender ? "right-8" : "left-8"
+    } top-6 flex flex-col bg-[#1c2738] rounded-lg shadow-lg border border-white/10 z-50 overflow-hidden min-w-[160px]`}
+  >
+    <button
+      onClick={() => deleteForMe(msg._id)}
+      className="px-3 py-2 text-left text-gray-200 hover:bg-[#2a3a4f] text-sm"
+    >
+      Delete for me
+    </button>
 
-                        {isSender && (
-                          <button
-                            onClick={() => deleteForEveryone(msg._id)}
-                            className="w-full px-4 py-2 text-left whitespace-nowrap text-red-600 hover:bg-red-50"
-                          >
-                            Delete for everyone
-                          </button>
-                        )}
+    {isSender && (
+      <button
+        onClick={() => deleteForEveryone(msg._id)}
+        className="px-3 py-2 text-left text-red-400 hover:bg-red-500/10 text-sm"
+      >
+        Delete for everyone
+      </button>
+    )}
 
-                        <button
-                          onClick={() => {
-                            setForwardMessage(msg);
-                            setOpenMenuId(null);
-                          }}
-                          className="w-full px-4 py-2 text-left whitespace-nowrap hover:bg-gray-100"
-                        >
-                          Forward
-                        </button>
-                      </div>
-                    )}
+    <button
+      onClick={() => {
+        setForwardMessage(msg);
+        setOpenMenuId(null);
+      }}
+      className="px-3 py-2 text-left text-gray-200 hover:bg-[#2a3a4f] text-sm"
+    >
+      Forward
+    </button>
+  </div>
+)}
                   </div>
                 )}
 
@@ -389,47 +389,69 @@ const Messages = () => {
       <div ref={messagesEndRef} />
     </div>
     {forwardMessage && (
-      <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center">
-        <div className="bg-white text-gray-900 rounded-xl w-[320px] h-[420px] overflow-y-auto p-4">
+  <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex items-center justify-center">
 
-          <h3 className="font-semibold mb-3">Forward to</h3>
+    <div className="w-[340px] max-h-[420px] bg-[#0f172a] text-white rounded-2xl shadow-2xl border border-white/10 flex flex-col">
 
-          {users.length === 0 ? (
-            <p className="text-center text-sm text-gray-400">
-              Loading contacts...
-            </p>
-          ) : (
-            users
-  .filter((u) => u._id !== loggedUser._id)
-  .map((user) => {
-    console.log("FORWARD USER OBJECT:", user);
-
-    return (
-      <button
-        key={user._id}
-        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 text-gray-900"
-        onClick={() => {
-          chatStore
-            .getState()
-            .forwardToUser(user._id, forwardMessage);
-          clearForwardMessage();
-        }}
-      >
-        {user.username}
-      </button>
-    );
-  })
-          )}
-
-          <button
-            className="mt-3 w-full text-sm text-red-500"
-            onClick={clearForwardMessage}
-          >
-            Cancel
-          </button>
-        </div>
+      {/* HEADER */}
+      <div className="px-4 py-3 border-b border-white/10 text-sm font-semibold">
+        Forward Message
       </div>
-    )}
+
+      {/* USER LIST */}
+      <div className="flex-1 overflow-y-auto px-2 py-2 custom-scroll">
+
+        {users.length === 0 ? (
+          <p className="text-center text-gray-400 py-6">Loading...</p>
+        ) : (
+          users
+            .filter((u) => u._id !== loggedUser._id)
+            .map((user) => (
+              <button
+                key={user._id}
+                onClick={() => {
+                  chatStore
+                    .getState()
+                    .forwardToUser(user._id, forwardMessage);
+                  clearForwardMessage();
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition"
+              >
+                {/* AVATAR */}
+               {user.profilepic && user.profilepic.trim() !== "" ? (
+  <img
+    src={user.profilepic}
+    alt="avatar"
+    className="w-9 h-9 rounded-full object-cover"
+    onError={(e) => {
+      e.target.src = "/avatar.avif"; // fallback if broken
+    }}
+  />
+) : (
+  <img
+    src="/avatar.avif"
+    alt="avatar"
+    className="w-9 h-9 rounded-full object-cover"
+  />
+)}
+                {/* NAME */}
+                <span className="text-sm">{user.username}</span>
+              </button>
+            ))
+        )}
+      </div>
+
+      {/* FOOTER */}
+     <button
+  onClick={clearForwardMessage}
+  className="mx-3 my-3 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-400/30 hover:bg-red-500/20 hover:scale-[1.02] active:scale-[0.98] transition"
+>
+  Cancel
+</button>
+
+    </div>
+  </div>
+)}
     </>
   );
 };

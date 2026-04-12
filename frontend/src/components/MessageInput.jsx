@@ -205,7 +205,7 @@ const file = new File(
     if (!text.trim() && !image) return;
     socket?.emit("stopTyping", selectedUser._id);
     sendMessage({
-      text: image ? "" : text.trim(),
+      text: text.trim(),
       image: image || "",
       caption: image ? text.trim() : "",
       audio: "",
@@ -270,41 +270,49 @@ const handleDocumentPick = (e) => {
   return (
     <>
       {/* IMAGE PREVIEW OVERLAY */}
-      {image && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-md flex justify-center items-center px-3">
-          <button
-            onClick={() => setImage(null)}
-            className="absolute top-4 right-4 bg-white/20 text-white size-9 rounded-full flex justify-center items-center font-bold"
-          >
-            ✕
-          </button>
+     {image && (
+  <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
+    
+    <div className="w-full max-w-sm bg-[#111827] rounded-2xl shadow-2xl p-4 flex flex-col gap-3 relative">
+      
+      {/* CLOSE */}
+      <button
+        onClick={() => setImage(null)}
+        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/30 flex items-center justify-center text-white"
+      >
+        ✕
+      </button>
 
-          <div className="flex flex-col items-center max-w-[350px] w-full">
-            <img
-              src={image}
-              className="max-h-[72vh] rounded-lg shadow-xl border border-white/30"
-              alt=""
-            />
+      {/* IMAGE */}
+      <img
+        src={image}
+        alt=""
+        className="w-full max-h-[60vh] object-cover rounded-xl"
+      />
 
-            <input
-              type="text"
-              placeholder="Caption..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={60}
-              className="w-[85%] px-2 py-2 rounded-md bg-black/30 text-white mt-3 text-sm"
-              onKeyDown={handleKeyDown}
-            />
+      {/* CAPTION + SEND */}
+     <div className="flex items-center gap-2 mt-3 bg-[#1a1f2e] rounded-full px-3 py-2 border border-white/10">
 
-            <button
-              onClick={handleSendMessage}
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 w-[85%] mt-3 py-2 rounded-md text-white font-semibold"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
+  <input
+    type="text"
+    placeholder="Add a caption..."
+    value={text}
+    onChange={(e) => setText(e.target.value)}
+    onKeyDown={handleKeyDown}
+    className="flex-1 bg-transparent text-white placeholder-gray-400 outline-none text-sm px-2"
+  />
+
+  <button
+    onClick={handleSendMessage}
+    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition"
+  >
+    <LuSendHorizontal className="text-white text-lg" />
+  </button>
+
+</div>
+    </div>
+  </div>
+)}
 
       {/* AUDIO RECORDING OVERLAY (UI UNCHANGED) */}
       {showRecordingUI && (
