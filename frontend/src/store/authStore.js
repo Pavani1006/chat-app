@@ -86,6 +86,12 @@ connectSocket: () => {
   const { loggedUser } = get();
   if (!loggedUser) return;
 
+  const existingSocket = get().socket;
+  if (existingSocket) {
+    if (!existingSocket.active) existingSocket.connect();
+    return;
+  }
+
   const socket = io("https://connectly-backend-dkbq.onrender.com", {
     query: { userId: loggedUser._id },
     withCredentials: true,
@@ -97,13 +103,17 @@ connectSocket: () => {
     set({ onlineUsers: userIds });
   });
 
-  // 🔥 chat listeners
   const chat = chatStore.getState();
   chat.stopListeningForMessages();
   chat.listenForNewMessage();
   chat.listenForTyping();
 
-  // 🔥 call listeners (ONCE, GLOBAL)
+  socket.on("connect", () => {
+    const chatState = chatStore.getState();
+    chatState.getUsers();
+    if (chatState.selectedUser) chatState.getMessages();
+  });
+
   get().listenForCalls();
 },
 
@@ -147,7 +157,9 @@ socket.on("call:accepted", ({ from }) => {
 
 
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const socket = get().socket;
+    socket?.disconnect();
+    set({ socket: null, onlineUsers: [] });
   },
 }));
 

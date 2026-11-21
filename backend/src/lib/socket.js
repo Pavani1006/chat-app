@@ -13,27 +13,35 @@ const io = new Server(server, {
   },
 });
 
-const userSocket = {};
+const userSockets = new Map();
 const activeCalls = {}; // 🔥 Track ongoing calls
 
-export const getReceiverSocketId = (userId) => userSocket[userId];
+export const getReceiverRoom = (userId) => String(userId);
+export const isUserOnline = (userId) => userSockets.has(String(userId));
+export const getReceiverSocketId = (userId) => {
+  const sockets = userSockets.get(String(userId));
+  return sockets ? [...sockets].pop() : undefined;
+};
 
 io.on("connection", (socket) => {
   console.log("✅ User connected:", socket.id);
 
-  const userId = socket.handshake.query.userId;
+  const userId = String(socket.handshake.query.userId || "");
   if (userId) {
-    userSocket[userId] = socket.id;
+    const sockets = userSockets.get(userId) || new Set();
+    sockets.add(socket.id);
+    userSockets.set(userId, sockets);
+    socket.join(getReceiverRoom(userId));
   }
 
-  io.emit("getOnlineUsers", Object.keys(userSocket));
+  io.emit("getOnlineUsers", [...userSockets.keys()]);
 
 socket.on("call:start", async ({ to, type }) => {
   console.log("📞 CALL START:", userId, "→", to, type);
 
-  const receiverSocketId = userSocket[to];
+  const receiverSocketId = getReceiverSocketId(to);
 
-  if (!receiverSocketId) {
+  if (!isUserOnline(to)) {
     await Message.create({
       senderId: userId,
       receiverId: to,
@@ -67,10 +75,10 @@ socket.on("call:start", async ({ to, type }) => {
         seenBy: [userId],
       });
 
-      const latestReceiverSocket = userSocket[to];
+      const latestReceiverSocket = getReceiverSocketId(to);
+      io.to(getReceiverRoom(to)).emit("newMessage", missedCall);
       if (latestReceiverSocket) {
-        io.to(latestReceiverSocket).emit("newMessage", missedCall);
-        io.to(latestReceiverSocket).emit("call:ended"); 
+        io.to(latestReceiverSocket).emit("call:ended");
       }
 
       socket.emit("call:no_answer"); 
@@ -94,7 +102,7 @@ socket.on("call:start", async ({ to, type }) => {
       activeCalls[callKey].accepted = true;
     }
 
-    const receiverSocketId = userSocket[to];
+    const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call:accepted", {
         from: userId,
@@ -118,12 +126,12 @@ socket.on("call:reject", async ({ to }) => {
       seenBy: [to],
     });
 
-    socket.emit("newMessage", missedCall); 
+    io.to(getReceiverRoom(userId)).emit("newMessage", missedCall);
   }
 
   delete activeCalls[callKey];
 
-  const callerSocketId = userSocket[to];
+  const callerSocketId = getReceiverSocketId(to);
   if (callerSocketId) {
     io.to(callerSocketId).emit("call:rejected");
   }
@@ -145,21 +153,21 @@ socket.on("disconnect", async () => {
         seenBy: [call.from],
       });
 
-      const receiverSocketId = userSocket[call.to];
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("newMessage", missedCall);
-      }
+      io.to(getReceiverRoom(call.to)).emit("newMessage", missedCall);
       
       delete activeCalls[key];
     }
   }
 
-  delete userSocket[userId];
-  io.emit("getOnlineUsers", Object.keys(userSocket));
+  const sockets = userSockets.get(userId);
+  sockets?.delete(socket.id);
+  if (sockets?.size === 0) {
+    userSockets.delete(userId);
+  }
+  io.emit("getOnlineUsers", [...userSockets.keys()]);
 });
 socket.on("call:end", ({ to }) => {
-  const receiverSocketId = userSocket[to];
-
+  const receiverSocketId = getReceiverSocketId(to);
   if (receiverSocketId) {
     io.to(receiverSocketId).emit("call:ended", {
       from: userId,
@@ -170,7 +178,7 @@ socket.on("call:end", ({ to }) => {
 
 
   socket.on("webrtc-offer", ({ to, offer }) => {
-    const receiverSocketId = userSocket[to];
+    const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("webrtc-offer", {
         from: userId,
@@ -180,7 +188,7 @@ socket.on("call:end", ({ to }) => {
   });
 
   socket.on("webrtc-answer", ({ to, answer }) => {
-    const receiverSocketId = userSocket[to];
+    const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("webrtc-answer", {
         from: userId,
@@ -190,7 +198,7 @@ socket.on("call:end", ({ to }) => {
   });
 
   socket.on("ice-candidate", ({ to, candidate }) => {
-    const receiverSocketId = userSocket[to];
+    const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("ice-candidate", {
         from: userId,

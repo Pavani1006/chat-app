@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
@@ -10,22 +9,6 @@ import "../index.css";
 
 const ChatContainer = () => {
   const { inCall } = chatStore();
-
-  useEffect(() => {
-    const store = chatStore.getState();
-
-    console.log("🔌 Registering socket listeners");
-
-    store.listenForNewMessage();
-    store.listenForTyping();
-
-    return () => {
-      console.log("🧹 Cleaning up socket listeners");
-
-      store.stopListeningForMessages();
-      store.stopListeningForTyping();
-    };
-  }, []);
 
     if (inCall) {
     return <CallScreen />;

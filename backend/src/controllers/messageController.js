@@ -1,6 +1,6 @@
 import Users from "../model/userModel.js";
 import Messages from "../model/messageModel.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverRoom, io } from "../lib/socket.js";
 
 export const contactsForSidebar = async (req, res) => {
   try {
@@ -125,10 +125,7 @@ if (req.body.isVideo === "true" || req.body.isVideo === true) {
 
     await newMessage.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    io.to(getReceiverRoom(receiverId)).emit("newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -152,10 +149,8 @@ export const markMessagesSeen = async (req, res) => {
     );
 
     if (result.modifiedCount > 0) {
-      const socketId = getReceiverSocketId(chatUserId);
-      if (socketId) {
-        io.to(socketId).emit("messagesSeen", viewerId);
-      }
+      io.to(getReceiverRoom(chatUserId)).emit("messagesSeen", viewerId);
+      io.to(getReceiverRoom(viewerId)).emit("unreadCountUpdated", chatUserId);
     }
 
     res.status(200).json({ success: true });
@@ -201,10 +196,7 @@ export const deleteMessageForEveryone = async (req, res) => {
 
     await message.save();
 
-    const receiverSocketId = getReceiverSocketId(message.receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("messageDeleted", message);
-    }
+    io.to(getReceiverRoom(message.receiverId)).emit("messageDeleted", message);
 
     res.status(200).json(message);
   } catch (error) {

@@ -70,16 +70,66 @@ export const chatStore = create((set, get) => ({
     const { selectedUser } = get();
     if (!selectedUser) return;
 
+    const selectedUserId = selectedUser._id;
     set({ loadingMessages: true });
     try {
       const res = await axiosInstance.get(
-        `/message/getmessages/${selectedUser._id}`
+        `/message/getmessages/${selectedUserId}`
       );
-      set({ messages: res.data });
-    } catch {
+      if (String(get().selectedUser?._id) !== String(selectedUserId)) return;
+
+      set((state) => {
+        const fetchedIds = new Set(res.data.map((message) => String(message._id)));
+        const newMessages = state.messages.filter(
+          (message) =>
+            !message.isOptimistic && !fetchedIds.has(String(message._id))
+        );
+        return {
+          messages: [...res.data, ...newMessages].sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          ),
+        };
+      });
+      get().markMessagesSeen(selectedUserId);
+    } catch (error) {
+      console.error("Fetch messages failed:", error);
       toast.error("Failed to fetch messages.");
     } finally {
-      set({ loadingMessages: false });
+      if (String(get().selectedUser?._id) === String(selectedUserId)) {
+        set({ loadingMessages: false });
+      }
+    }
+  },
+
+  markMessagesSeen: async (chatUserId) => {
+    const loggedUser = authStore.getState().loggedUser;
+    if (!loggedUser || !chatUserId) return;
+
+    try {
+      await axiosInstance.put(`/message/mark-seen/${chatUserId}`);
+      const viewerId = String(loggedUser._id);
+      set((state) => ({
+        users: state.users.map((user) =>
+          String(user._id) === String(chatUserId)
+            ? { ...user, unreadCount: 0 }
+            : user
+        ),
+        messages: state.messages.map((message) => {
+          if (
+            String(message.senderId) !== String(chatUserId) ||
+            String(message.receiverId) !== viewerId
+          ) {
+            return message;
+          }
+          const seenBy = (message.seenBy || []).map(String);
+          return seenBy.includes(viewerId)
+            ? message
+            : { ...message, seenBy: [...seenBy, viewerId] };
+        }),
+      }));
+    } catch (error) {
+      console.error("Mark messages seen failed:", error);
+      get().getUsers();
     }
   },
 
@@ -171,29 +221,20 @@ console.log("🎯 BACKEND RESPONSE:", res.data);
   /* ===================== SELECT CHAT ===================== */
   setSelectedUser: (user) => {
     if (!user) {
-      set({ selectedUser: null, messages: [] });
+      set({ selectedUser: null, messages: [], loadingMessages: false });
       return;
     }
 
-    const loggedUser = authStore.getState().loggedUser;
-    const socket = authStore.getState().socket;
+    if (String(get().selectedUser?._id) === String(user._id)) return;
 
     set((state) => ({
       selectedUser: user,
-      // messages: [],
+      messages: [],
       typingUserId: null,
       users: state.users.map((u) =>
-        u._id === user._id ? { ...u, unreadCount: 0 } : u
+        String(u._id) === String(user._id) ? { ...u, unreadCount: 0 } : u
       ),
     }));
-
-    get().getMessages().then(() => {
-      axiosInstance.put(`/message/mark-seen/${user._id}`).catch(() => {});
-      socket?.emit("markSeen", {
-        userId: loggedUser._id,
-        chatUserId: user._id,
-      });
-    });
   },
 
   /* ===================== SOCKET LISTENERS ===================== */
@@ -201,34 +242,66 @@ listenForNewMessage: () => {
   const socket = authStore.getState().socket;
   if (!socket) return;
 
-  // 🔥 prevent duplicate listeners
   socket.off("newMessage");
+  socket.off("messagesSeen");
+  socket.off("unreadCountUpdated");
 
   socket.on("newMessage", (newMessage) => {
     const { messages, selectedUser, users } = get();
     const loggedUser = authStore.getState().loggedUser;
 
-    // ignore own messages
-    if (newMessage.senderId === loggedUser._id) return;
+    if (String(newMessage.senderId) === String(loggedUser?._id)) return;
 
     const isChatOpen =
       selectedUser &&
-      newMessage.senderId === selectedUser._id &&
-      newMessage.receiverId === loggedUser._id;
+      String(newMessage.senderId) === String(selectedUser._id) &&
+      String(newMessage.receiverId) === String(loggedUser?._id);
 
     if (isChatOpen) {
-      set({ messages: [...messages, newMessage] });
+      if (!messages.some((message) => String(message._id) === String(newMessage._id))) {
+        set({ messages: [...messages, newMessage] });
+      }
+      get().markMessagesSeen(newMessage.senderId);
       return;
     }
 
-    // increment unread count ONCE
     set({
       users: users.map((u) =>
-        u._id === newMessage.senderId
+        String(u._id) === String(newMessage.senderId)
           ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
           : u
       ),
     });
+  });
+
+  socket.on("messagesSeen", (viewerId) => {
+    const loggedUser = authStore.getState().loggedUser;
+    if (!loggedUser) return;
+
+    set((state) => ({
+      messages: state.messages.map((message) => {
+        if (
+          String(message.senderId) !== String(loggedUser._id) ||
+          String(message.receiverId) !== String(viewerId)
+        ) {
+          return message;
+        }
+        const seenBy = (message.seenBy || []).map(String);
+        return seenBy.includes(String(viewerId))
+          ? message
+          : { ...message, seenBy: [...seenBy, String(viewerId)] };
+      }),
+    }));
+  });
+
+  socket.on("unreadCountUpdated", (chatUserId) => {
+    set((state) => ({
+      users: state.users.map((user) =>
+        String(user._id) === String(chatUserId)
+          ? { ...user, unreadCount: 0 }
+          : user
+      ),
+    }));
   });
 },
 
@@ -264,6 +337,8 @@ stopListeningForTyping: () => {
   // ONLY message-related listeners
   socket.off("newMessage");
   socket.off("messageDeleted");
+  socket.off("messagesSeen");
+  socket.off("unreadCountUpdated");
 },
 
 }));
