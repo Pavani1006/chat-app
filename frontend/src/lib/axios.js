@@ -1,6 +1,8 @@
 import axios from "axios";
 
+export const backendUrl = "https://connectly-backend-dkbq.onrender.com";
+
 export const axiosInstance = axios.create({
-  baseURL: "https://connectly-backend-dkbq.onrender.com/api",
+  baseURL: `${backendUrl}/api`,
   withCredentials: true,
 });

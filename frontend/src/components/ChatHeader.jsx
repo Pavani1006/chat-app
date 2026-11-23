@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { authStore } from "../store/authStore";
 import { chatStore } from "../store/chatStore";
 import { RxCross2 } from "react-icons/rx";
-import { FaPhoneAlt, FaVideo } from "react-icons/fa";
+import { FaArrowLeft, FaPhoneAlt, FaVideo } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 const ChatHeader = () => {
@@ -98,14 +98,21 @@ const startVideoCall = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between px-3 py-2 shadow-lg w-full bg-gray-800">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 shadow-lg w-full bg-gray-800">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={() => setSelectedUser(null)}
+            className="md:hidden p-2 rounded-full hover:bg-gray-700 transition"
+            title="Back to contacts"
+          >
+            <FaArrowLeft className="text-white" />
+          </button>
           <img
             src={selectedUser.profilepic && selectedUser.profilepic.trim() !== "" ? selectedUser.profilepic : "/avatar.avif"}
             alt="User Avatar"
-            className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover"
+            className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover flex-shrink-0"
           />
-          <div>
+          <div className="min-w-0">
             <h2 className="text-base lg:text-xl font-semibold truncate text-white">{selectedUser.username}</h2>
             <p className="text-xs text-gray-300">
               {isTyping ? "Typing..." : isUserOnline ? "Online" : "Offline"}
@@ -120,7 +127,7 @@ const startVideoCall = () => {
           <button onClick={startVideoCall} className="p-2 rounded-full hover:bg-gray-700 transition" title="Video Call">
             <FaVideo className="text-white" />
           </button>
-          <button onClick={() => setSelectedUser(null)} className="p-2 rounded-full hover:bg-gray-700 transition" title="Close chat">
+          <button onClick={() => setSelectedUser(null)} className="hidden md:block p-2 rounded-full hover:bg-gray-700 transition" title="Close chat">
             <RxCross2 className="text-white text-2xl" />
           </button>
         </div>

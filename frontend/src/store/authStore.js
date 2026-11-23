@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance, backendUrl } from "../lib/axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 import { chatStore } from "./chatStore";
@@ -92,7 +92,7 @@ connectSocket: () => {
     return;
   }
 
-  const socket = io("https://connectly-backend-dkbq.onrender.com", {
+  const socket = io(backendUrl, {
     query: { userId: loggedUser._id },
     withCredentials: true,
   });

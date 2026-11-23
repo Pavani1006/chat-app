@@ -13,13 +13,13 @@ const Sidebar = () => {
 
   return (
     // Base Container: Original dark gradient theme
-    <aside className="h-full w-96 flex flex-col bg-gradient-to-b from-[#0d1a2b] to-[#0a1623] border-r border-[#1c2a3b] shadow-xl">
+    <aside className="h-full w-full md:w-96 flex flex-col bg-gradient-to-b from-[#0d1a2b] to-[#0a1623] border-r border-[#1c2a3b] shadow-xl">
 
       {/* Header (UNCHANGED) */}
       <div className="w-full p-5 bg-[#122033]/70 backdrop-blur-md border-b border-[#1c2a3b] shadow-md">
         <div className="flex items-center gap-3">
           <FaUserCircle className="size-7 text-gray-200" />
-          <span className="font-semibold text-lg hidden lg:block text-gray-100 tracking-wide">
+          <span className="font-semibold text-lg text-gray-100 tracking-wide">
             Contacts
           </span>
         </div>
@@ -96,7 +96,7 @@ const Sidebar = () => {
                 </div>
 
                 {/* Name + status */}
-                <div className="hidden lg:flex flex-col min-w-0 text-left">
+                <div className="flex flex-col min-w-0 text-left">
                   <span className={`font-medium text-base truncate ${isSelected ? "text-white" : "text-gray-100"}`}>
                     {user.username} {/* FONT SIZE INCREASED HERE: text-base */}
                   </span>
