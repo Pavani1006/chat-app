@@ -304,9 +304,9 @@ const handleDocumentPick = (e) => {
 
   <button
     onClick={handleSendMessage}
-    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition"
+    className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition"
   >
-    <LuSendHorizontal className="text-white text-lg" />
+    <LuSendHorizontal className="text-white text-xl" />
   </button>
 
 </div>
@@ -366,10 +366,10 @@ const handleDocumentPick = (e) => {
 
               <button
                 onClick={sendAudio}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 hover:scale-105 transition flex items-center justify-center"
+                className="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 hover:scale-105 transition flex items-center justify-center"
 
  >
-                <LuSendHorizontal className="text-white text-lg" />
+                <LuSendHorizontal className="text-white text-2xl" />
               </button>
             </div>
           </div>
@@ -474,9 +474,9 @@ const handleDocumentPick = (e) => {
           {text || image ? (
             <button
               onClick={handleSendMessage}
-              className="w-12 h-12 flex justify-center items-center bg-slate-700 text-white rounded-full"
+              className="w-14 h-14 shrink-0 flex justify-center items-center bg-slate-700 text-white rounded-2xl shadow-lg hover:bg-slate-600 active:scale-95 transition"
             >
-              <LuSendHorizontal className="text-2xl" />
+              <LuSendHorizontal className="text-3xl" />
             </button>
           ) : (
             <button

@@ -19,7 +19,10 @@ const ChatContainer = () => {
         <IncomingCallModal />
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
+      <div
+        data-message-scroll-container
+        className="flex-1 overflow-y-auto scrollbar-hide min-h-0"
+      >
         <Messages />
       </div>
 

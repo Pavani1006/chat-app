@@ -24,6 +24,7 @@ const Messages = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
 
   // per-message audio timing state
   const [audioTimes, setAudioTimes] = useState({});
@@ -206,7 +207,7 @@ const Messages = () => {
 
             <div className={isSender ? "flex justify-end" : "flex"}>
               <div
-                className={`relative w-fit max-w-[70%] py-2.5 px-4 rounded-2xl shadow ${
+                className={`relative w-fit max-w-[70%] py-2.5 px-4 pr-9 rounded-2xl shadow ${
                   isSender
                     ? "bg-white text-gray-900 rounded-br-none"
                     : "bg-gray-200 text-gray-900 rounded-bl-none"
@@ -219,18 +220,59 @@ const Messages = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
-                      onClick={() =>
-                        setOpenMenuId(openMenuId === msg._id ? null : msg._id)
-                      }
+                      onClick={(e) => {
+                        if (openMenuId === msg._id) {
+                          setOpenMenuId(null);
+                          return;
+                        }
+
+                        const triggerRect = e.currentTarget.getBoundingClientRect();
+                        const bounds = e.currentTarget
+                          .closest("[data-message-scroll-container]")
+                          ?.getBoundingClientRect();
+                        const topLimit = (bounds?.top ?? 0) + 4;
+                        const bottomLimit =
+                          (bounds?.bottom ?? window.innerHeight) - 4;
+                        const leftLimit = (bounds?.left ?? 0) + 4;
+                        const rightLimit =
+                          (bounds?.right ?? window.innerWidth) - 4;
+                        const menuWidth = 160;
+                        const menuHeight = isSender ? 110 : 74;
+                        const maxHeight = Math.max(
+                          0,
+                          Math.min(menuHeight, bottomLimit - topLimit)
+                        );
+                        const belowTop = triggerRect.bottom + 4;
+                        const top =
+                          belowTop + maxHeight <= bottomLimit
+                            ? belowTop
+                            : Math.max(
+                                topLimit,
+                                triggerRect.top - maxHeight - 4
+                              );
+                        const preferredLeft = isSender
+                          ? triggerRect.left - menuWidth - 8
+                          : triggerRect.right + 8;
+                        const left = Math.max(
+                          leftLimit,
+                          Math.min(preferredLeft, rightLimit - menuWidth)
+                        );
+
+                        setMenuPosition({ top, left, maxHeight });
+                        setOpenMenuId(msg._id);
+                      }}
                     >
                       <BsThreeDotsVertical size={14} />
                     </button>
 
                     {openMenuId === msg._id && (
   <div
-    className={`absolute ${
-      isSender ? "right-8" : "left-8"
-    } top-6 flex flex-col bg-[#1c2738] rounded-lg shadow-lg border border-white/10 z-50 overflow-hidden min-w-[160px]`}
+    className="fixed flex flex-col bg-[#1c2738] rounded-lg shadow-lg border border-white/10 z-[1000] overflow-y-auto min-w-[160px]"
+    style={{
+      top: menuPosition?.top,
+      left: menuPosition?.left,
+      maxHeight: menuPosition?.maxHeight,
+    }}
   >
     <button
       onClick={() => deleteForMe(msg._id)}
